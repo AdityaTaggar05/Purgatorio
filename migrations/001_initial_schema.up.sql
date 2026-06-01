@@ -44,7 +44,7 @@ CREATE TABLE items(
   created_on TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE items_limits(
+CREATE TABLE item_limits(
   item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
   terrace_level INT NOT NULL CHECK (terrace_level >= 1),
   max_allowed INT NOT NULL CHECK (max_allowed >= 0),
