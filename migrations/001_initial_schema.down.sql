@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS auth CASCADE;
 -- Drop enums
 DROP TYPE IF EXISTS currency_type;
 DROP TYPE IF EXISTS item_category;
+DROP TYPE IF EXISTS battle_outcomes;
 
 -- Drop extensions
 DROP EXTENSION IF EXISTS pgcrypto;
