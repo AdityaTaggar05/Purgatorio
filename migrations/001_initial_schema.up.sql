@@ -105,9 +105,6 @@ CREATE TABLE battle_replays(
 );
 
 -- Indexes
-CREATE INDEX idx_usernames ON users(username);
-CREATE INDEX idx_battle_logs_attacker ON battles(attacker_id, started_at DESC);
-CREATE INDEX idx_battle_logs_defender ON battles(defender_id, started_at DESC);
-CREATE INDEX idx_item_category ON items(category);
-CREATE INDEX idx_player_leagues ON users(terrace_level);
-CREATE INDEX idx_base_snapshots_player ON base_snapshots(player_id, created_at DESC);
+CREATE INDEX idx_battle_logs_attacker ON battles(attacker_id, started_at DESC); -- to view attack logs
+CREATE INDEX idx_battle_logs_defender ON battles(defender_id, started_at DESC); -- to view defense logs
+CREATE INDEX idx_player_leagues ON users(terrace_level); -- for and when leagues are implemented
