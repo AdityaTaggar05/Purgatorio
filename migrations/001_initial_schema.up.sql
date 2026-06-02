@@ -85,7 +85,7 @@ CREATE TABLE game_state(
 );
 
 CREATE TABLE base_layouts(
-  player_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   buildings JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -93,7 +93,7 @@ CREATE TABLE base_layouts(
 -- Battle Management
 CREATE TABLE base_snapshots(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  player_id UUID REFERENCES users(id) ON DELETE SET NULL, -- careful here, since NULL player_id would mean a deleted player. remember to add in game
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- careful here, since NULL user_id would mean a deleted player. remember to add in game
   buildings JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -1,10 +1,7 @@
 -- Drop indexes
-DROP INDEX IF EXISTS idx_base_snapshots_player;
 DROP INDEX IF EXISTS idx_player_leagues;
-DROP INDEX IF EXISTS idx_item_category;
 DROP INDEX IF EXISTS idx_battle_logs_defender;
 DROP INDEX IF EXISTS idx_battle_logs_attacker;
-DROP INDEX IF EXISTS idx_usernames;
 
 -- Drop tables
 DROP TABLE IF EXISTS battle_replays CASCADE;
@@ -15,6 +12,8 @@ DROP TABLE IF EXISTS game_state CASCADE;
 DROP TABLE IF EXISTS user_items CASCADE;
 DROP TABLE IF EXISTS items_limits CASCADE;
 DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS user_combat CASCADE;
+DROP TABLE IF EXISTS user_economy CASCADE;
 DROP TABLE IF EXISTS user_stats CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS auth CASCADE;
