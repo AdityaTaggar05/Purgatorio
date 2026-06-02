@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS base_snapshots CASCADE;
 DROP TABLE IF EXISTS base_layouts CASCADE;
 DROP TABLE IF EXISTS game_state CASCADE;
 DROP TABLE IF EXISTS user_buildings CASCADE;
+DROP TABLE IF EXISTS building_levels CASCADE;
 DROP TABLE IF EXISTS building_limits CASCADE;
 DROP TABLE IF EXISTS buildings CASCADE;
 DROP TABLE IF EXISTS user_army CASCADE;
@@ -23,7 +24,7 @@ DROP TABLE IF EXISTS auth CASCADE;
 -- Drop enums
 DROP TYPE IF EXISTS currency_type;
 DROP TYPE IF EXISTS building_category;
-DROP TYPE IF EXISTS battle_outcomes;
+DROP TYPE IF EXISTS battle_outcome;
 
 -- Drop extensions
 DROP EXTENSION IF EXISTS pgcrypto;
