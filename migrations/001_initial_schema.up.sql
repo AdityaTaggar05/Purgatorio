@@ -26,11 +26,21 @@ CREATE TABLE users(
 );
 
 CREATE TABLE user_stats(
-  user_id PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   attacks INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
   attacks_success INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
   defenses INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
   defenses_success INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE user_economy(
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  penitence INT NOT NULL DEFAULT 500 CHECK (penitence >= 0),
+  grace INT NOT NULL DEFAULT 50 CHECK (grace >= 0),
+  max_penitence INT NOT NULL DEFAULT 5000 CHECK (max_penitence > 0),
+  collector_pending_penitence INT NOT NULL DEFAULT 0 CHECK (penitence_uncollected >= 0),
+  collector_reset_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
