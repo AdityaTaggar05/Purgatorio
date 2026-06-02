@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TYPE item_category AS ENUM ('defense', 'army', 'resource', 'other');
+CREATE TYPE building_category AS ENUM ('defense', 'army', 'resource', 'other');
 CREATE TYPE currency_type AS ENUM ('penitence', 'grace');
 CREATE TYPE battle_outcome AS ENUM ('victory', 'defeat', 'threshold_failed');
 
@@ -53,27 +53,39 @@ CREATE TABLE user_combat (
 );
 
 -- Shop Management
-CREATE TABLE items(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE buildings(
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
   price INT NOT NULL CHECK (price >= 0),
   currency currency_type NOT NULL DEFAULT 'penitence',
-  category item_category NOT NULL DEFAULT 'other',
+  category building_category NOT NULL DEFAULT 'other',
   created_on TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE item_limits(
-  item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+CREATE TABLE building_limits(
+  building_id TEXT NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
   terrace_level INT NOT NULL CHECK (terrace_level >= 1),
   max_allowed INT NOT NULL CHECK (max_allowed >= 0),
-  PRIMARY KEY (item_id, terrace_level)
+  PRIMARY KEY (building_id, terrace_level)
 );
 
-CREATE TABLE user_items(
+CREATE TABLE building_levels(
+  building_id TEXT REFERENCES buildings(id) ON DELETE CASCADE,
+  level INT NOT NULL CHECK (level >= 1),
+  hp INT,
+  damage_per_second FLOAT, -- not null only for defenses
+  production_rate FLOAT, -- not null only for collectors
+  storage_capacity INT, -- not null only for storages
+  upgrade_cost INT NOT NULL,
+  upgrade_time INT NOT NULL,
+  PRIMARY KEY (building_id, level)
+);
+
+CREATE TABLE user_buildings(
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  item_id UUID REFERENCES items(id) ON DELETE CASCADE,
+  building_id TEXT REFERENCES buildings(id) ON DELETE CASCADE,
   quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-  PRIMARY KEY(user_id, item_id)
+  PRIMARY KEY(user_id, building_id)
 );
 
 -- State Management
@@ -88,6 +100,22 @@ CREATE TABLE base_layouts(
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   buildings JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Army and Troops Management
+CREATE TABLE user_army (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  troops JSONB NOT NULL DEFAULT '{}',
+  used_capacity INT NOT NULL DEFAULT 0,
+  max_capacity INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE troops(
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  training_cost INT NOT NULL,
+  space INT NOT NULL
 );
 
 -- Battle Management

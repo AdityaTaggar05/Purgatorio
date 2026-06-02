@@ -4,14 +4,16 @@ DROP INDEX IF EXISTS idx_battle_logs_defender;
 DROP INDEX IF EXISTS idx_battle_logs_attacker;
 
 -- Drop tables
+DROP TABLE IF EXISTS troops CASCADE;
 DROP TABLE IF EXISTS battle_replays CASCADE;
 DROP TABLE IF EXISTS battles CASCADE;
 DROP TABLE IF EXISTS base_snapshots CASCADE;
 DROP TABLE IF EXISTS base_layouts CASCADE;
 DROP TABLE IF EXISTS game_state CASCADE;
-DROP TABLE IF EXISTS user_items CASCADE;
-DROP TABLE IF EXISTS item_limits CASCADE;
-DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS user_buildings CASCADE;
+DROP TABLE IF EXISTS building_limits CASCADE;
+DROP TABLE IF EXISTS buildings CASCADE;
+DROP TABLE IF EXISTS user_army CASCADE;
 DROP TABLE IF EXISTS user_combat CASCADE;
 DROP TABLE IF EXISTS user_economy CASCADE;
 DROP TABLE IF EXISTS user_stats CASCADE;
@@ -20,7 +22,7 @@ DROP TABLE IF EXISTS auth CASCADE;
 
 -- Drop enums
 DROP TYPE IF EXISTS currency_type;
-DROP TYPE IF EXISTS item_category;
+DROP TYPE IF EXISTS building_category;
 DROP TYPE IF EXISTS battle_outcomes;
 
 -- Drop extensions
