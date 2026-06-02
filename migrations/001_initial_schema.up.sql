@@ -19,8 +19,6 @@ CREATE TABLE users(
     GREATEST(1, FLOOR(SQRT(xp / 25.0)))::INT
   ) STORED,
   terrace_level INT NOT NULL DEFAULT 1,
-  penitence INT NOT NULL DEFAULT 500 CHECK (penitence >= 0),
-  grace INT NOT NULL DEFAULT 50 CHECK (grace >= 0),
   created_on TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
