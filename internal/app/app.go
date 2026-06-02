@@ -14,7 +14,11 @@ type App struct {
 func New(cfg *config.Config) (*App, error) {
 	return &App{
 		Config: cfg,
-		Server: &http.Server{},
+		Server: &http.Server{
+			Addr: ":" + cfg.Server.Port,
+			ReadTimeout: cfg.Server.ReadTimeout,
+			WriteTimeout: cfg.Server.WriteTimeout,
+		},
 	}, nil
 }
 
