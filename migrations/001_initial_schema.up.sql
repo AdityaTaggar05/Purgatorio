@@ -2,6 +2,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TYPE item_category AS ENUM ('defense', 'army', 'resource', 'other');
 CREATE TYPE currency_type AS ENUM ('penitence', 'grace');
+CREATE TYPE battle_outcome AS ENUM ('victory', 'defeat', 'threshold_failed');
 
 -- Auth and User Management
 CREATE TABLE auth(
@@ -39,6 +40,15 @@ CREATE TABLE user_economy(
   max_penitence INT NOT NULL DEFAULT 5000 CHECK (max_penitence > 0),
   collector_pending_penitence INT NOT NULL DEFAULT 0 CHECK (penitence_uncollected >= 0),
   collector_reset_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE user_combat (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  sin_meter INT NOT NULL DEFAULT 0 CHECK (sin_meter BETWEEN 0 AND 100),
+  last_attack_at TIMESTAMPTZ,
+  shield_expires_at TIMESTAMPTZ,
+  shield_max_duration INT NOT NULL DEFAULT 28800,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -92,6 +102,8 @@ CREATE TABLE battles(
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   attacker_id UUID REFERENCES users(id) ON DELETE SET NULL, -- same as above here
   defender_id UUID REFERENCES users(id) ON DELETE SET NULL, -- and here
+  outcome battle_outcome NOT NULL,
+  destruction INT NOT NULL CHECK (destruction BETWEEN 0 AND 100),
   loot INT NOT NULL CHECK (loot >= 0),
   duration INT NOT NULL CHECK (duration >= 0),
   base_snapshot_id UUID REFERENCES base_snapshots(id) NOT NULL ON DELETE CASCADE,
