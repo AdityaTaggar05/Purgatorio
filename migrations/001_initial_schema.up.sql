@@ -15,11 +15,11 @@ CREATE TABLE auth(
 CREATE TABLE users(
   id UUID PRIMARY KEY REFERENCES auth(id) ON DELETE CASCADE,
   username TEXT UNIQUE NOT NULL CHECK (length(username) BETWEEN 3 and 14),
-  xp INT NOT NULL DEFAULT 0,
+  xp INT NOT NULL DEFAULT 0 CHECK (xp >= 0),
   level INT GENERATED ALWAYS AS (
     GREATEST(1, FLOOR(SQRT(xp / 25.0)))::INT
   ) STORED,
-  terrace_level INT NOT NULL DEFAULT 1,
+  terrace_level INT NOT NULL DEFAULT 1 CHECK (terrace_level >= 1),
   created_on TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -27,9 +27,9 @@ CREATE TABLE users(
 CREATE TABLE user_stats(
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   attacks INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
-  attacks_success INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
-  defenses INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
-  defenses_success INT NOT NULL DEFAULT 0 CHECK (attacks >= 0),
+  attacks_success INT NOT NULL DEFAULT 0 CHECK (attacks_success >= 0),
+  defenses INT NOT NULL DEFAULT 0 CHECK (defenses >= 0),
+  defenses_success INT NOT NULL DEFAULT 0 CHECK (defenses_success >= 0),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
