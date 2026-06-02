@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
 )
 
@@ -19,12 +21,16 @@ type App struct {
 }
 
 func New(cfg *config.Config) (*App, error) {
+	authHandler := auth.NewHandler()
+	router := https.NewRouter(authHandler)
+
 	return &App{
 		Config: cfg,
 		Server: &http.Server{
 			Addr: ":" + cfg.Server.Port,
 			ReadTimeout: cfg.Server.ReadTimeout,
 			WriteTimeout: cfg.Server.WriteTimeout,
+			Handler: router,
 		},
 	}, nil
 }
