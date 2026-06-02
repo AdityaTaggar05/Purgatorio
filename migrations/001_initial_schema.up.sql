@@ -38,7 +38,7 @@ CREATE TABLE user_economy(
   penitence INT NOT NULL DEFAULT 500 CHECK (penitence >= 0),
   grace INT NOT NULL DEFAULT 50 CHECK (grace >= 0),
   max_penitence INT NOT NULL DEFAULT 5000 CHECK (max_penitence > 0),
-  collector_pending_penitence INT NOT NULL DEFAULT 0 CHECK (penitence_uncollected >= 0),
+  collector_pending_penitence INT NOT NULL DEFAULT 0 CHECK (collector_pending_penitence >= 0),
   collector_reset_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -106,7 +106,7 @@ CREATE TABLE battles(
   destruction INT NOT NULL CHECK (destruction BETWEEN 0 AND 100),
   loot INT NOT NULL CHECK (loot >= 0),
   duration INT NOT NULL CHECK (duration >= 0),
-  base_snapshot_id UUID REFERENCES base_snapshots(id) NOT NULL ON DELETE CASCADE,
+  base_snapshot_id UUID NOT NULL REFERENCES base_snapshots(id) ON DELETE CASCADE,
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT same_player CHECK (attacker_id <> defender_id)
 );
