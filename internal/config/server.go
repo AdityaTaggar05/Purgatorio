@@ -3,7 +3,7 @@ package config
 import "time"
 
 type ServerConfig struct {
-	Port int
+	Port string
 	ReadTimeout time.Duration
 	WriteTimeout time.Duration
 }
