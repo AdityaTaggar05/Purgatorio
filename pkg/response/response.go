@@ -60,10 +60,9 @@ func Created(w http.ResponseWriter, data any, message string) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Error(ctx context.Context, w http.ResponseWriter, statusCode int, code string, err error) {
+func Error(ctx context.Context, w http.ResponseWriter, statusCode int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-
 
 	// Logging error with full details
 	if logCtx, ok := ctx.Value(middleware.LogContextKey).(*middleware.LogContext); ok {
@@ -80,31 +79,31 @@ func Error(ctx context.Context, w http.ResponseWriter, statusCode int, code stri
 	response := Response{
 		Success: false,
 		Error: &ErrorData{
-			Code:    code,
+			Code:    http.StatusText(statusCode),
 			Message: message,
 			// TODO: implement Details for api response as well
 		},
 	}
- 
+
 	json.NewEncoder(w).Encode(response)
 }
 
 func BadRequest(ctx context.Context, w http.ResponseWriter, err error) {
-	Error(ctx, w, http.StatusBadRequest, "BAD_REQUEST", err)
+	Error(ctx, w, http.StatusBadRequest, err)
 }
 
 func NotFound(ctx context.Context, w http.ResponseWriter, err error) {
-	Error(ctx, w, http.StatusNotFound, "NOT_FOUND", err)
+	Error(ctx, w, http.StatusNotFound, err)
 }
 
 func InternalServerError(ctx context.Context, w http.ResponseWriter, err error) {
-	Error(ctx, w, http.StatusInternalServerError, "INTERNAL_ERROR", err)
+	Error(ctx, w, http.StatusInternalServerError, err)
 }
 
 func Unauthorized(ctx context.Context, w http.ResponseWriter, err error) {
-	Error(ctx, w, http.StatusUnauthorized, "UNAUTHORIZED", err)
+	Error(ctx, w, http.StatusUnauthorized, err)
 }
 
 func Forbidden(ctx context.Context, w http.ResponseWriter, err error) {
-	Error(ctx, w, http.StatusForbidden, "FORBIDDEN", err)
+	Error(ctx, w, http.StatusForbidden, err)
 }
