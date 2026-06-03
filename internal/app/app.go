@@ -13,6 +13,7 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
+	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
 )
 
 type App struct {
@@ -21,9 +22,21 @@ type App struct {
 }
 
 func New(cfg *config.Config) (*App, error) {
+	// 1) Infrastructure Setup
+	ctx := context.Background()
+	_ = postgres.NewPostgresDB(ctx, cfg.Postgres)
+
+	// 2) Repository Setup
+
+	// 3) Service Setup
+
+	// 4) Handler Setup
 	authHandler := auth.NewHandler()
+
+	// 5) Router Setup
 	router := https.NewRouter(authHandler)
 
+	// 6) Server Setup
 	return &App{
 		Config: cfg,
 		Server: &http.Server{
