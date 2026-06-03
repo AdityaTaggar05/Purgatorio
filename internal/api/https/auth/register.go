@@ -16,7 +16,7 @@ type RegisterRequestDTO struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type RegsiterResponseDTO struct {
+type RegisterResponseDTO struct {
 	User   model.User      `json:"user"`
 	Tokens model.TokenPair `json:"tokens"`
 }
@@ -35,14 +35,14 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user, tokens, err := h.Service.Register(r.Context(), req.Email, req.Username, req.Password); err == nil {
-		response.JSON(w, http.StatusCreated, RegsiterResponseDTO{
+		response.JSON(w, http.StatusCreated, RegisterResponseDTO{
 			User:   user,
 			Tokens: tokens,
 		})
 	} else {
 		switch err {
 		case service.ErrUserAlreadyExists:
-			response.Error(r.Context(), w, http.StatusConflict, fmt.Errorf("User already exists"))
+			response.Error(r.Context(), w, http.StatusConflict, err)
 		default:
 			h.Logger.Error(err.Error())
 			response.InternalServerError(r.Context(), w, err)

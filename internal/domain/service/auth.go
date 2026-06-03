@@ -26,8 +26,10 @@ func NewAuthService(cfg config.JWTConfig, key *model.SigningKey, userRepo reposi
 }
 
 func (s *AuthService) Register(ctx context.Context, email, username, password string) (model.User, model.TokenPair, error) {
-	var user model.User
-	var tokens model.TokenPair
+	var (
+		user   model.User
+		tokens model.TokenPair
+	)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
@@ -38,6 +40,44 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 	if err != nil {
 		fmt.Println(err)
 		return user, tokens, ErrUserAlreadyExists
+	}
+
+	tokens.AccessToken, err = model.GenerateJWT(user, s.SigningKey, s.Config.AccessTTL)
+	if err != nil {
+		return user, tokens, err
+	}
+
+	refreshToken, err := model.GenerateRefreshToken(user.ID, s.Config.RefreshTTL)
+	if err != nil {
+		return user, tokens, err
+	}
+	tokens.RefreshToken = refreshToken.Token
+
+	err = s.UserRepo.CreateRefreshToken(ctx, user.ID, tokens.RefreshToken, time.Now().Add(s.Config.RefreshTTL))
+	if err != nil {
+		return user, tokens, err
+	}
+
+	return user, tokens, nil
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password string) (model.User, model.TokenPair, error) {
+	var (
+		user   model.User
+		tokens model.TokenPair
+	)
+
+	if password == "" {
+		return user, tokens, ErrIncorrectPassword
+	}
+
+	user, err := s.UserRepo.GetAuthAndUserByEmail(ctx, email)
+	if err != nil {
+		return user, tokens, ErrUserNotFound
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return user, tokens, ErrIncorrectPassword
 	}
 
 	tokens.AccessToken, err = model.GenerateJWT(user, s.SigningKey, s.Config.AccessTTL)
