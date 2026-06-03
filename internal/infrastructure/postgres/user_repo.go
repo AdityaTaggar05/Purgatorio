@@ -63,3 +63,12 @@ func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID, token s
 	)
 	return err
 }
+
+func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) error {
+	_, err := r.DB.Exec(
+		ctx,
+		`UPDATE refresh_tokens SET revoked=true WHERE token=$1`,
+		token,
+	)
+	return err
+}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -73,11 +74,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (model.
 
 	user, err := s.UserRepo.GetAuthAndUserByEmail(ctx, email)
 	if err != nil {
-		return user, tokens, ErrUserNotFound
+		return user, tokens, errors.Join(err, ErrUserNotFound)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return user, tokens, ErrIncorrectPassword
+		return user, tokens, errors.Join(err, ErrIncorrectPassword)
 	}
 
 	tokens.AccessToken, err = model.GenerateJWT(user, s.SigningKey, s.Config.AccessTTL)
@@ -97,4 +98,12 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (model.
 	}
 
 	return user, tokens, nil
+}
+
+func (s *AuthService) Logout(ctx context.Context, oldToken string) error {
+	//if !IsValidRefreshToken(oldToken) {
+	//return tokenservice.ErrInvalidRefreshTokenFormat
+	//}
+
+	return s.UserRepo.RevokeRefreshToken(ctx, oldToken)
 }
