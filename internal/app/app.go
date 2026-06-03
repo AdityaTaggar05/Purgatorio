@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,12 +19,21 @@ import (
 type App struct {
 	Config *config.Config
 	Server *http.Server
+	Logger *slog.Logger
+	close func() error
 }
 
 func New(cfg *config.Config) (*App, error) {
+	// 1) Logger Setup
+	logger, close, err := initializeLogger(os.Getenv("LOG_FILE"))
+
+	if err != nil {
+		return nil, err
+	}
+
 	// 1) Infrastructure Setup
 	ctx := context.Background()
-	_ = postgres.NewPostgresDB(ctx, cfg.Postgres)
+	_ = postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
 
 	// 2) Repository Setup
 
@@ -45,18 +54,26 @@ func New(cfg *config.Config) (*App, error) {
 			WriteTimeout: cfg.Server.WriteTimeout,
 			Handler: router,
 		},
+		Logger: logger,
+		close: close,
 	}, nil
 }
 
 func (a *App) Start() error {
+	defer func() {
+		if err := a.close(); err != nil {
+			fmt.Fprint(os.Stderr, err)
+		}
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		fmt.Println("Purgatorio Server listening on " + a.Server.Addr)
+		a.Logger.Debug("Purgatorio Server listening on " + a.Server.Addr)
 
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP server error: %v", err)
+			a.Logger.Error("HTTP server error: %v", err)
 		}
 	}()
 
@@ -65,10 +82,10 @@ func (a *App) Start() error {
 	defer cancel()
 
 	if err := a.Server.Shutdown(ctx); err != nil {
-		fmt.Printf("Server shutdown failed: %v\n", err)
+		a.Logger.Error("Server shutdown failed: %v\n", err)
 		return err
 	}
 
-	fmt.Println("Purgatorio Server stopped gracefully!")
+	a.Logger.Debug("Purgatorio Server stopped gracefully!")
 	return nil
 }

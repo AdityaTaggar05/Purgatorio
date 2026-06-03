@@ -2,18 +2,19 @@ package postgres
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewPostgresDB(ctx context.Context, cfg config.PostgresConfig) *pgxpool.Pool {
+func NewPostgresDB(logger *slog.Logger, ctx context.Context, cfg config.PostgresConfig) *pgxpool.Pool {
 	pgCfg, err := pgxpool.ParseConfig(cfg.URL)
 
 	if err != nil {
-		log.Fatal("[ERR] Unable to parse config for database: ", err)
+		logger.Error(fmt.Sprintf("unable to parse config for database: %v", err))
 	}
 
 	pgCfg.MaxConns = int32(cfg.MaxOpenConns)
@@ -23,14 +24,14 @@ func NewPostgresDB(ctx context.Context, cfg config.PostgresConfig) *pgxpool.Pool
 	DB, err := pgxpool.NewWithConfig(ctx, pgCfg)
 
 	if err != nil {
-		log.Fatal("[ERR] Unable to connect to database: ", err)
+		logger.Error(fmt.Sprintf("unable to connect to database: %v", err))
 	}
 
 	err = DB.Ping(ctx)
 	if err != nil {
-		log.Fatal("[ERR] Could not ping the database: ", err)
+		logger.Error(fmt.Sprintf("could not ping the database: %v", err))
 	}
-	log.Println("[DEBUG] Connected to the database!")
+	logger.Debug("connected to the database!")
 
 	return DB
 }

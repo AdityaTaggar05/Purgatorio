@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/app"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
@@ -15,10 +16,12 @@ func main() {
 	server, err := app.New(cfg)
 
 	if err != nil {
-		log.Fatal(err)
+		server.Logger.Error(fmt.Sprintf("unable to initialize the server: %v", err))
+		os.Exit(1)
 	}
 
 	if err := server.Start(); err != nil {
-		log.Fatal(err)
+		server.Logger.Error(fmt.Sprintf("unable to start the server: %v", err))
+		os.Exit(1)
 	}
 }
