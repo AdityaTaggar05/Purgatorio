@@ -19,5 +19,8 @@ func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler) *chi.Mux {
 		response.Success(w, nil, "Service is up and running!")
 	})
 
+	r.Mount("/auth", authHandler.Routes())
+	r.Post("/.well-known/jwks.json", authHandler.HandleJWKS)
+
 	return r
 }
