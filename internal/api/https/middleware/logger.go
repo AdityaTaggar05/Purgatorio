@@ -14,7 +14,7 @@ const LogContextKey = "<log_ctx>"
 
 type LogContext struct {
 	UserID string
-	Error error
+	Error  error
 }
 
 // Extending the default request reader interface to add custom fields
@@ -33,7 +33,7 @@ func (r *customReadCloser) Read(p []byte) (int, error) {
 type customResponseWriter struct {
 	http.ResponseWriter
 	bytesWritten int
-	statusCode int
+	statusCode   int
 }
 
 func (w *customResponseWriter) Write(p []byte) (int, error) {
@@ -84,8 +84,13 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 				attrs = append(attrs, slog.Any("error", logCtx.Error.Error()))
 			}
 
-			logger.Info("Served request", attrs...)
+			logLevel := slog.LevelInfo
+			if responseReader.statusCode >= 500 {
+				logLevel = slog.LevelError
+			} else if responseReader.statusCode >= 400 {
+				logLevel = slog.LevelWarn
+			}
+			logger.Log(r.Context(), logLevel, "Served request", attrs...)
 		})
 	}
 }
-
