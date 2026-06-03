@@ -61,9 +61,9 @@ func (s *SigningKey) PublicKeyToJWK() map[string]string {
     }
 }
 
-func GenerateJWT(user User, signingKey *SigningKey, ttl time.Duration) (string, error) {
+func GenerateJWT(userID string, signingKey *SigningKey, ttl time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"sub": user.ID,
+		"sub": userID,
 		"exp": jwt.NewNumericDate(time.Now().Add(ttl)),
 		"iat": jwt.NewNumericDate(time.Now()),
 		"iss": signingKey.Issuer,

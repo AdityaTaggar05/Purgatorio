@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
@@ -39,11 +38,10 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 
 	user, err = s.UserRepo.CreateUser(ctx, email, string(hash), username)
 	if err != nil {
-		fmt.Println(err)
 		return user, tokens, ErrUserAlreadyExists
 	}
 
-	tokens.AccessToken, err = model.GenerateJWT(user, s.SigningKey, s.Config.AccessTTL)
+	tokens.AccessToken, err = model.GenerateJWT(user.ID, s.SigningKey, s.Config.AccessTTL)
 	if err != nil {
 		return user, tokens, err
 	}
@@ -81,7 +79,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (model.
 		return user, tokens, errors.Join(err, ErrIncorrectPassword)
 	}
 
-	tokens.AccessToken, err = model.GenerateJWT(user, s.SigningKey, s.Config.AccessTTL)
+	tokens.AccessToken, err = model.GenerateJWT(user.ID, s.SigningKey, s.Config.AccessTTL)
 	if err != nil {
 		return user, tokens, err
 	}
@@ -101,9 +99,44 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (model.
 }
 
 func (s *AuthService) Logout(ctx context.Context, oldToken string) error {
+	// TODO: Implement custom validation logic
 	//if !IsValidRefreshToken(oldToken) {
 	//return tokenservice.ErrInvalidRefreshTokenFormat
 	//}
 
 	return s.UserRepo.RevokeRefreshToken(ctx, oldToken)
+}
+
+func (s *AuthService) Refresh(ctx context.Context, oldToken string) (model.TokenPair, error) {
+	// TODO: Implement custom validation logic
+	//if !IsValidRefreshToken(oldToken) {
+	//return model.TokenPair{}, ErrInvalidRefreshTokenFormat
+	//}
+
+	tokens := model.TokenPair{}
+
+	rt, err := s.UserRepo.GetRefreshToken(ctx, oldToken)
+
+	if err != nil || rt.Revoked || rt.ExpiresAt.Before(time.Now()) {
+		return tokens, ErrInvalidRefreshToken
+	}
+
+	err = s.UserRepo.RevokeRefreshToken(ctx, oldToken)
+	if err != nil {
+		return tokens, err
+	}
+
+	refreshToken, err := model.GenerateRefreshToken(rt.UserID, s.Config.RefreshTTL)
+	if err != nil {
+		return tokens, err
+	}
+	tokens.RefreshToken = refreshToken.Token
+
+	_ = s.UserRepo.CreateRefreshToken(ctx, rt.UserID, tokens.RefreshToken, time.Now().Add(s.Config.RefreshTTL))
+	tokens.AccessToken, err = model.GenerateJWT(rt.UserID, s.SigningKey, s.Config.AccessTTL)
+	if err != nil {
+		return tokens, err
+	}
+
+	return tokens, nil
 }

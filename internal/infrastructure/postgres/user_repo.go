@@ -64,6 +64,19 @@ func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID, token s
 	return err
 }
 
+func (r *UserRepository) GetRefreshToken(ctx context.Context, token string) (model.RefreshToken, error) {
+	var rt model.RefreshToken
+
+	err := r.DB.QueryRow(
+		ctx,
+		`SELECT user_id, token, revoked, expires_at FROM refresh_tokens WHERE token=$1`,
+		token,
+	).Scan(
+		&rt.UserID, &rt.Token, &rt.Revoked, &rt.ExpiresAt,
+	)
+	return rt, err
+}
+
 func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) error {
 	_, err := r.DB.Exec(
 		ctx,
