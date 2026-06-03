@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Extending the default request reader interface to add custom fields
 type customReadCloser struct {
 	io.ReadCloser
 	bytesRead int
@@ -18,6 +19,7 @@ func (r *customReadCloser) Read(p []byte) (int, error) {
 	return n, err
 }
 
+// Extending the default response reader interface to add custom fields
 type customResponseWriter struct {
 	http.ResponseWriter
 	bytesWritten int
@@ -25,6 +27,7 @@ type customResponseWriter struct {
 }
 
 func (w *customResponseWriter) Write(p []byte) (int, error) {
+	// If only w.Write is called, it by default means StatusOK
 	if w.statusCode == 0 {
 		w.statusCode = http.StatusOK
 	}
