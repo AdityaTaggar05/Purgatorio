@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-// Useful for intercepting response error messages and even redacting information about the error
+// Intercepts useful information for logging
+// Also used for intercepting response error messages and even redacting information about the error
 const logContextKey = "<log_ctx>"
 
 type LogContext struct {
+	UserID string
 	Error error
 }
 
@@ -70,6 +72,10 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 				slog.Int("request_body_bytes", requestReader.bytesRead),
 				slog.Int("response_body_bytes", responseReader.bytesWritten),
 				slog.Int("response_status", responseReader.statusCode),
+			}
+
+			if logCtx.UserID != "" {
+				attrs = append(attrs, slog.String("user_id", logCtx.UserID))
 			}
 
 			if logCtx.Error != nil {
