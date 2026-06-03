@@ -1,11 +1,19 @@
 package middleware
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
 )
+
+// Useful for intercepting response error messages and even redacting information about the error
+const logContextKey = "<log_ctx>"
+
+type LogContext struct {
+	Error error
+}
 
 // Extending the default request reader interface to add custom fields
 type customReadCloser struct {
@@ -46,6 +54,8 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
+			logCtx := &LogContext{}
+
 			// Intercepting Requests
 			requestReader := &customReadCloser{ReadCloser: r.Body}
 			r.Body = requestReader
@@ -53,13 +63,17 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Intercepting Responses
 			responseReader := &customResponseWriter{ResponseWriter: w}
 
-			next.ServeHTTP(responseReader, r)
+			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), logContextKey, logCtx)))
 
 			attrs := []any{
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", requestReader.bytesRead),
 				slog.Int("response_body_bytes", responseReader.bytesWritten),
 				slog.Int("response_status", responseReader.statusCode),
+			}
+
+			if logCtx.Error != nil {
+				attrs = append(attrs, slog.Any("error", logCtx.Error.Error()))
 			}
 
 			logger.Info("Served request", attrs...)
