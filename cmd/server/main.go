@@ -16,7 +16,7 @@ func main() {
 	server, err := app.New(cfg)
 
 	if err != nil {
-		server.Logger.Error(fmt.Sprintf("unable to initialize the server: %v", err))
+		fmt.Fprintf(os.Stderr, "unable to initialize the server: %v\n", err)
 		os.Exit(1)
 	}
 

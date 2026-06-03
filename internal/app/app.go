@@ -13,7 +13,10 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
+	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/token"
 )
 
 type App struct {
@@ -33,14 +36,21 @@ func New(cfg *config.Config) (*App, error) {
 
 	// 2) Infrastructure Setup
 	ctx := context.Background()
-	_ = postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
+	db := postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
 
 	// 3) Repository Setup
+	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
 
 	// 4) Service Setup
+	signingKey, err := token.LoadSigningKey(cfg.JWT)
+	if err != nil {
+		return nil, err
+	}
+
+	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
 
 	// 5) Handler Setup
-	authHandler := auth.NewHandler()
+	authHandler := auth.NewHandler(logger, authService)
 
 	// 6) Router Setup
 	router := https.NewRouter(logger, authHandler)
@@ -73,7 +83,7 @@ func (a *App) Start() error {
 		a.Logger.Debug("Purgatorio Server listening on " + a.Server.Addr)
 
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.Logger.Error("HTTP server error: %v", err)
+			a.Logger.Error("HTTP server error: %v", "error", err)
 		}
 	}()
 
@@ -82,7 +92,7 @@ func (a *App) Start() error {
 	defer cancel()
 
 	if err := a.Server.Shutdown(ctx); err != nil {
-		a.Logger.Error("Server shutdown failed: %v\n", err)
+		a.Logger.Error("Server shutdown failed: %v\n", "error", err)
 		return err
 	}
 
