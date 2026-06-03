@@ -16,6 +16,7 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
+	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/token"
 )
 
 type App struct {
@@ -41,7 +42,12 @@ func New(cfg *config.Config) (*App, error) {
 	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
 
 	// 4) Service Setup
-	authService := service.NewAuthService(cfg.JWT, userRepo)
+	signingKey, err := token.LoadSigningKey(cfg.JWT)
+	if err != nil {
+		return nil, err
+	}
+
+	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
 
 	// 5) Handler Setup
 	authHandler := auth.NewHandler(logger, authService)
