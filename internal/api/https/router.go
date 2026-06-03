@@ -20,7 +20,7 @@ func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler) *chi.Mux {
 	})
 
 	r.Mount("/auth", authHandler.Routes())
-	r.Post("/.well-known/jwks.json", authHandler.HandleJWKS)
+	r.Get("/.well-known/jwks.json", authHandler.HandleJWKS)
 
 	return r
 }
