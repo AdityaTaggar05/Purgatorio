@@ -140,3 +140,11 @@ func (s *AuthService) Refresh(ctx context.Context, oldToken string) (model.Token
 
 	return tokens, nil
 }
+
+func (s *AuthService) JWKS() map[string]any {
+	jwk := s.SigningKey.PublicKeyToJWK()
+
+	return map[string]any{
+		"keys": []any{jwk},
+	}
+}
