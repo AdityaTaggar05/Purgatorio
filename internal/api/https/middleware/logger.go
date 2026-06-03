@@ -68,6 +68,8 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), LogContextKey, logCtx)))
 
 			attrs := []any{
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", requestReader.bytesRead),
 				slog.Int("response_body_bytes", responseReader.bytesWritten),
