@@ -13,6 +13,8 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
 )
 
@@ -33,14 +35,16 @@ func New(cfg *config.Config) (*App, error) {
 
 	// 2) Infrastructure Setup
 	ctx := context.Background()
-	_ = postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
+	db := postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
 
 	// 3) Repository Setup
+	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
 
 	// 4) Service Setup
+	authService := service.NewAuthService(cfg.JWT, userRepo)
 
 	// 5) Handler Setup
-	authHandler := auth.NewHandler()
+	authHandler := auth.NewHandler(logger, authService)
 
 	// 6) Router Setup
 	router := https.NewRouter(logger, authHandler)

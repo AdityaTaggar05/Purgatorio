@@ -1,7 +1,19 @@
 package auth
 
-type AuthHandler struct { }
+import (
+	"log/slog"
 
-func NewHandler() *AuthHandler {
-	return &AuthHandler{}
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
+)
+
+type AuthHandler struct {
+	Logger *slog.Logger
+	Service *service.AuthService
+}
+
+func NewHandler(logger *slog.Logger, service *service.AuthService) *AuthHandler {
+	return &AuthHandler{
+		Logger: logger,
+		Service: service,
+	}
 }
