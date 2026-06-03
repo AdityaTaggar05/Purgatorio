@@ -10,7 +10,7 @@ import (
 
 // Intercepts useful information for logging
 // Also used for intercepting response error messages and even redacting information about the error
-const logContextKey = "<log_ctx>"
+const LogContextKey = "<log_ctx>"
 
 type LogContext struct {
 	UserID string
@@ -65,7 +65,7 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Intercepting Responses
 			responseReader := &customResponseWriter{ResponseWriter: w}
 
-			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), logContextKey, logCtx)))
+			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), LogContextKey, logCtx)))
 
 			attrs := []any{
 				slog.Duration("duration", time.Since(start)),

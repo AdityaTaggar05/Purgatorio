@@ -6,6 +6,7 @@ import (
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/middleware"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 	"github.com/go-chi/chi"
 )
 
@@ -15,8 +16,7 @@ func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler) *chi.Mux {
 	r.Use(middleware.RequestLogger(logger))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Service is up and running!"))
+		response.Success(w, nil, "Service is up and running!")
 	})
 
 	return r
