@@ -43,7 +43,7 @@ func New(cfg *config.Config) (*App, error) {
 	authHandler := auth.NewHandler()
 
 	// 6) Router Setup
-	router := https.NewRouter(authHandler)
+	router := https.NewRouter(logger, authHandler)
 
 	// 7) Server Setup
 	return &App{
