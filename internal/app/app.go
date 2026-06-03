@@ -31,21 +31,21 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	// 1) Infrastructure Setup
+	// 2) Infrastructure Setup
 	ctx := context.Background()
 	_ = postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
 
-	// 2) Repository Setup
+	// 3) Repository Setup
 
-	// 3) Service Setup
+	// 4) Service Setup
 
-	// 4) Handler Setup
+	// 5) Handler Setup
 	authHandler := auth.NewHandler()
 
-	// 5) Router Setup
+	// 6) Router Setup
 	router := https.NewRouter(authHandler)
 
-	// 6) Server Setup
+	// 7) Server Setup
 	return &App{
 		Config: cfg,
 		Server: &http.Server{
