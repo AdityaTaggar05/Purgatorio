@@ -8,6 +8,6 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(context.Context, string, string) (model.User, error)
+	CreateUser(context.Context, string, string, string) (model.User, error)
 	CreateRefreshToken(context.Context, string, string, time.Time) error
 }

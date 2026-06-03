@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
@@ -33,8 +34,9 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 		return user, tokens, err
 	}
 
-	user, err = s.UserRepo.CreateUser(ctx, email, string(hash))
+	user, err = s.UserRepo.CreateUser(ctx, email, string(hash), username)
 	if err != nil {
+		fmt.Println(err)
 		return user, tokens, ErrUserAlreadyExists
 	}
 
@@ -55,5 +57,4 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 	}
 
 	return user, tokens, nil
-
 }

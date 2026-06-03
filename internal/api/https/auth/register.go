@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 )
 
@@ -33,13 +34,18 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, tokens, err := h.Service.Register(r.Context(), req.Email, req.Username, req.Password)
-	if err != nil {
-
+	if user, tokens, err := h.Service.Register(r.Context(), req.Email, req.Username, req.Password); err == nil {
+		response.JSON(w, http.StatusCreated, RegsiterResponseDTO{
+			User:   user,
+			Tokens: tokens,
+		})
+	} else {
+		switch err {
+		case service.ErrUserAlreadyExists:
+			response.Error(r.Context(), w, http.StatusConflict, fmt.Errorf("User already exists"))
+		default:
+			h.Logger.Error(err.Error())
+			response.InternalServerError(r.Context(), w, err)
+		}
 	}
-
-	response.JSON(w, http.StatusCreated, RegsiterResponseDTO{
-		User: user,
-		Tokens: tokens,
-	})
 }

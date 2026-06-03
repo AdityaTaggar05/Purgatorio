@@ -12,6 +12,15 @@ CREATE TABLE auth(
   created_on TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE refresh_tokens(
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token TEXT UNIQUE NOT NULL,
+  user_id UUID REFERENCES auth(id) ON DELETE CASCADE,
+  created_on TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked BOOL NOT NULL DEFAULT FALSE
+);
+
 CREATE TABLE users(
   id UUID PRIMARY KEY REFERENCES auth(id) ON DELETE CASCADE,
   username TEXT UNIQUE NOT NULL CHECK (length(username) BETWEEN 3 and 14),
