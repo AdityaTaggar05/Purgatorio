@@ -81,7 +81,7 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			}
 
 			if logCtx.Error != nil {
-				attrs = append(attrs, slog.Any("error", logCtx.Error.Error()))
+				attrs = append(attrs, slog.Any("error", logCtx.Error))
 			}
 
 			logLevel := slog.LevelInfo

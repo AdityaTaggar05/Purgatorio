@@ -83,7 +83,7 @@ func (a *App) Start() error {
 		a.Logger.Debug("Purgatorio Server listening on " + a.Server.Addr)
 
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.Logger.Error("HTTP server error: %v", err)
+			a.Logger.Error("HTTP server error: %v", "error", err)
 		}
 	}()
 
@@ -92,7 +92,7 @@ func (a *App) Start() error {
 	defer cancel()
 
 	if err := a.Server.Shutdown(ctx); err != nil {
-		a.Logger.Error("Server shutdown failed: %v\n", err)
+		a.Logger.Error("Server shutdown failed: %v\n", "error", err)
 		return err
 	}
 
