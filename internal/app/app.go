@@ -36,7 +36,12 @@ func New(cfg *config.Config) (*App, error) {
 
 	// 2) Infrastructure Setup
 	ctx := context.Background()
-	db := postgres.NewPostgresDB(logger, ctx, cfg.Postgres)
+	db, err := postgres.NewPostgresDB(ctx, cfg.Postgres)
+
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("connected to database!")
 
 	// 3) Repository Setup
 	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
