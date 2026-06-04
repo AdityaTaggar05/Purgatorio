@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -22,14 +23,14 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(req); err != nil {
-		response.Error(r.Context(), w, http.StatusUnprocessableEntity, err)
+		response.ValidationFailed(r.Context(), w, err)
 		return
 	}
 
 	tokens, err := h.Service.Refresh(r.Context(), req.RefreshToken)
 	if err != nil {
-		switch err {
-		case service.ErrInvalidRefreshTokenFormat, service.ErrInvalidRefreshToken:
+		switch {
+		case errors.Is(err, service.ErrInvalidRefreshTokenFormat), errors.Is(err, service.ErrInvalidRefreshToken):
 			response.BadRequest(r.Context(), w, err)
 		default:
 			response.InternalServerError(r.Context(), w, err)

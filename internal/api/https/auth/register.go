@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,7 +31,7 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(req); err != nil {
-		response.Error(r.Context(), w, http.StatusUnprocessableEntity, err)
+		response.ValidationFailed(r.Context(), w, err)
 		return
 	}
 
@@ -40,11 +41,10 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 			Tokens: tokens,
 		})
 	} else {
-		switch err {
-		case service.ErrUserAlreadyExists:
+		switch {
+		case errors.Is(err, service.ErrUserAlreadyExists):
 			response.Error(r.Context(), w, http.StatusConflict, err)
 		default:
-			h.Logger.Error(err.Error())
 			response.InternalServerError(r.Context(), w, err)
 		}
 	}

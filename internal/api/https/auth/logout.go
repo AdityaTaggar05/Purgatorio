@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -22,13 +23,13 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(req); err != nil {
-		response.Error(r.Context(), w, http.StatusUnprocessableEntity, err)
+		response.ValidationFailed(r.Context(), w, err)
 		return
 	}
 
 	if err := h.Service.Logout(r.Context(), req.RefreshToken); err != nil {
-		switch err {
-		case service.ErrInvalidRefreshTokenFormat:
+		switch {
+		case errors.Is(err, service.ErrInvalidRefreshTokenFormat):
 			response.BadRequest(r.Context(), w, err)
 		default:
 			response.InternalServerError(r.Context(), w, err)

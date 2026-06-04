@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/purgerr"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -38,7 +38,7 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 
 	user, err = s.UserRepo.CreateUser(ctx, email, string(hash), username)
 	if err != nil {
-		return user, tokens, ErrUserAlreadyExists
+		return user, tokens, purgerr.Wrap(ErrUserAlreadyExists, err)
 	}
 
 	tokens.AccessToken, err = model.GenerateJWT(user.ID, s.SigningKey, s.Config.AccessTTL)
@@ -67,16 +67,16 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (model.
 	)
 
 	if password == "" {
-		return user, tokens, ErrIncorrectPassword
+		return user, tokens, purgerr.Wrap(ErrIncorrectPassword, ErrIncorrectPassword)
 	}
 
 	user, err := s.UserRepo.GetAuthAndUserByEmail(ctx, email)
 	if err != nil {
-		return user, tokens, errors.Join(err, ErrUserNotFound)
+		return user, tokens, purgerr.Wrap(ErrUserNotFound, err)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return user, tokens, errors.Join(err, ErrIncorrectPassword)
+		return user, tokens, purgerr.Wrap(ErrIncorrectPassword, err)
 	}
 
 	tokens.AccessToken, err = model.GenerateJWT(user.ID, s.SigningKey, s.Config.AccessTTL)
@@ -118,7 +118,7 @@ func (s *AuthService) Refresh(ctx context.Context, oldToken string) (model.Token
 	rt, err := s.UserRepo.GetRefreshToken(ctx, oldToken)
 
 	if err != nil || rt.Revoked || rt.ExpiresAt.Before(time.Now()) {
-		return tokens, ErrInvalidRefreshToken
+		return tokens, purgerr.Wrap(ErrInvalidRefreshToken, err)
 	}
 
 	err = s.UserRepo.RevokeRefreshToken(ctx, oldToken)

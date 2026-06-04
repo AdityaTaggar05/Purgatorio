@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -29,7 +30,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Validator.Struct(req); err != nil {
-		response.Error(r.Context(), w, http.StatusUnprocessableEntity, err)
+		response.ValidationFailed(r.Context(), w, err)
 		return
 	}
 
@@ -39,13 +40,12 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Tokens: tokens,
 		})
 	} else {
-		switch err {
-		case service.ErrUserNotFound:
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
 			response.Unauthorized(r.Context(), w, err)
-		case service.ErrIncorrectPassword:
+		case errors.Is(err, service.ErrIncorrectPassword):
 			response.Unauthorized(r.Context(), w, err)
 		default:
-			h.Logger.Error(err.Error())
 			response.InternalServerError(r.Context(), w, err)
 		}
 	}
