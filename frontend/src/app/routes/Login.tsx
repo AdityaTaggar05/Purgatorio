@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { Link } from 'react-router-dom';
 import AuthLayout from '../../ui/layout/Auth';
+import { login } from '../../features/auth/authApi';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -14,9 +15,15 @@ export default function LoginPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Logging in...', formData);
+
+    const result = await login({
+      email: formData.email,
+      password: formData.password
+    })
+
+    console.log(result)
   };
 
   return (
