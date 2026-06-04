@@ -17,9 +17,9 @@ type Response struct {
 }
 
 type ErrorData struct {
-	Code    string         `json:"code"`
-	Message string         `json:"message"`
-	Details map[string]any `json:"details,omitempty"`
+	Code    string       `json:"code"`
+	Message string       `json:"message"`
+	Details []FieldError `json:"details,omitempty"`
 }
 
 func JSON(w http.ResponseWriter, statusCode int, data any) {
