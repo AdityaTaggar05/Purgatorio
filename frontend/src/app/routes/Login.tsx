@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { Link } from 'react-router-dom';
 import AuthLayout from '../../ui/layout/Auth';
 
 export default function LoginPage() {
@@ -73,9 +74,9 @@ export default function LoginPage() {
       <div className="mt-8 pt-6 border-t border-purgatory-border text-center">
         <p className="text-sm tracking-wide text-gray-400">
           New to the journey?{' '}
-          <a href="/register" className="text-amber-500/60 hover:text-amber-500/80 underline underline-offset-4 ml-1 transition-colors">
-            Create an account
-          </a>
+          <Link to="/register" className="text-amber-500/60 hover:text-amber-500/80 underline underline-offset-4 ml-1 transition-colors">
+            Create an Account
+          </Link>
         </p>
       </div>
     </AuthLayout>
