@@ -13,10 +13,7 @@ export async function login(payload: LoginRequest): Promise<ApiResponse<LoginRes
         "Content-Type":
           "application/json",
       },
-      body: JSON.stringify({
-        "email": payload.email,
-        "password": payload.password
-      }),
+      body: JSON.stringify(payload),
     }
   );
 
@@ -31,11 +28,7 @@ export async function register(payload: RegisterRequest): Promise<ApiResponse<Re
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        "email": payload.email,
-        "username": payload.username,
-        "password": payload.password
-      })
+      body: JSON.stringify(payload)
     }
   )
 
