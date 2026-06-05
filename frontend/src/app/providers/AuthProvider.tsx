@@ -5,6 +5,7 @@ import * as api from '../../features/auth/authApi'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('purgatorio_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -37,8 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     const checkSession = async () => {
-      if (user && isMounted) {
+      if (user) {
         await getFreshToken();
+      }
+
+      if (isMounted) {
+        setIsLoading(false)
       }
     };
     checkSession();
@@ -46,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, getFreshToken]);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, getFreshToken }}>
+    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, getFreshToken }}>
       {children}
     </AuthContext.Provider>
   );
