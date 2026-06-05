@@ -1,33 +1,23 @@
 package auth
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 )
 
-type RefreshRequestDTO struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
 func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
-	var req RefreshRequestDTO
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.BadRequest(r.Context(), w, fmt.Errorf("invalid request JSON"))
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		response.Unauthorized(r.Context(), w, fmt.Errorf("No refresh token"))
 		return
 	}
 
-	if err := h.Validator.Struct(req); err != nil {
-		response.ValidationFailed(r.Context(), w, err)
-		return
-	}
-
-	tokens, err := h.Service.Refresh(r.Context(), req.RefreshToken)
+	tokens, err := h.Service.Refresh(r.Context(), cookie.Value)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidRefreshTokenFormat), errors.Is(err, service.ErrInvalidRefreshToken):
@@ -38,5 +28,15 @@ func (h *AuthHandler) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, tokens)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		Expires:  time.Now().Add(h.Service.Config.RefreshTTL),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/auth",
+	})
+
+	response.JSON(w, http.StatusOK, map[string]any{"access_token": tokens.AccessToken})
 }

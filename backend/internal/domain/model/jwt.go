@@ -18,8 +18,8 @@ type SigningKey struct {
 }
 
 type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string
+	RefreshToken string
 }
 
 type RefreshToken struct {
@@ -49,16 +49,16 @@ func GenerateRefreshToken(userID string, ttl time.Duration) (RefreshToken, error
 
 func (s *SigningKey) PublicKeyToJWK() map[string]string {
 	n := base64.RawURLEncoding.EncodeToString(s.PublicKey.N.Bytes())
-    e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(s.PublicKey.E)).Bytes())
+	e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(s.PublicKey.E)).Bytes())
 
-    return map[string]string{
-        "kty": "RSA",
-        "kid": s.ID,
-        "use": "sig",
-        "alg": "RS256",
-        "n":   n,
-        "e":   e,
-    }
+	return map[string]string{
+		"kty": "RSA",
+		"kid": s.ID,
+		"use": "sig",
+		"alg": "RS256",
+		"n":   n,
+		"e":   e,
+	}
 }
 
 func GenerateJWT(userID string, signingKey *SigningKey, ttl time.Duration) (string, error) {

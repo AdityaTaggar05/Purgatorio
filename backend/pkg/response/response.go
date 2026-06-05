@@ -72,7 +72,7 @@ func Error(ctx context.Context, w http.ResponseWriter, statusCode int, err error
 	message := err.Error()
 
 	// Redacting the error details for specific status codes
-	if slices.Contains([]int{401, 403, 500}, statusCode) {
+	if slices.Contains([]int{403, 500}, statusCode) {
 		message = http.StatusText(statusCode)
 	}
 
