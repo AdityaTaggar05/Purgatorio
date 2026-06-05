@@ -106,9 +106,13 @@ CREATE TABLE game_state(
 );
 
 CREATE TABLE base_layouts(
-  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  buildings JSONB NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  building_id TEXT REFERENCES buildings(id) ON DELETE CASCADE,
+  x INT NOT NULL CHECK (x >= 0),
+  y INT NOT NULL CHECK (y >= 0),
+  metadata JSONB,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, building_id)
 );
 
 -- Army and Troops Management
