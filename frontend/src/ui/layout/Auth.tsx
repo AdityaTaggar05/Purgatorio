@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -7,6 +9,20 @@ interface AuthLayoutProps {
 }
 
 export default function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  const { user, accessToken, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[color-purgatory-bg] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (user && accessToken) {
+    return <Navigate to="/game" replace />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center p-4 relative overflow-hidden">
 
