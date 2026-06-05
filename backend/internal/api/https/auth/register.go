@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
@@ -18,8 +19,8 @@ type RegisterRequestDTO struct {
 }
 
 type RegisterResponseDTO struct {
-	User   model.User      `json:"user"`
-	Tokens model.TokenPair `json:"tokens"`
+	User        model.User `json:"user"`
+	AccessToken string     `json:"access_token"`
 }
 
 func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
@@ -36,9 +37,19 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user, tokens, err := h.Service.Register(r.Context(), req.Email, req.Username, req.Password); err == nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    tokens.RefreshToken,
+			Expires:  time.Now().Add(h.Service.Config.RefreshTTL),
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			Path:     "/auth",
+		})
+
 		response.JSON(w, http.StatusCreated, RegisterResponseDTO{
-			User:   user,
-			Tokens: tokens,
+			User:        user,
+			AccessToken: tokens.AccessToken,
 		})
 	} else {
 		switch {

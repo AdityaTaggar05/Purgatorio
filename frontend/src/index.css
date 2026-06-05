@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cinzel", serif;
+  --font-sans: "Alegreya Sans", sans-serif;
+
+  /* Purgatorio Palette */
+  --color-purgatory-bg: #111111;
+  --color-purgatory-card: #181716;
+  --color-purgatory-border: #2c2927;
+  --color-purgatory-input: #1e1d1c;
+  --color-purgatory-input-border: #363330;
+}
+
+@layer base {
+  body {
+    @apply bg-purgatory-bg text-gray-200 font-sans antialiased;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

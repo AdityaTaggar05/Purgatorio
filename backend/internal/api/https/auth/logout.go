@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,24 +9,14 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 )
 
-type LogoutRequestDTO struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
 func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	var req LogoutRequestDTO
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.BadRequest(r.Context(), w, fmt.Errorf("invalid request JSON"))
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		response.Unauthorized(r.Context(), w, fmt.Errorf("No refresh token"))
 		return
 	}
 
-	if err := h.Validator.Struct(req); err != nil {
-		response.ValidationFailed(r.Context(), w, err)
-		return
-	}
-
-	if err := h.Service.Logout(r.Context(), req.RefreshToken); err != nil {
+	if err := h.Service.Logout(r.Context(), cookie.Value); err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidRefreshTokenFormat):
 			response.BadRequest(r.Context(), w, err)
