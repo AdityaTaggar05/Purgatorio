@@ -1,3 +1,5 @@
+import type { User } from "../../types/user";
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -5,7 +7,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: User;
-  tokens: JwtTokens;
+  access_token: string;
 }
 
 export interface RegisterRequest {
@@ -16,18 +18,9 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   user: User;
-  tokens: JwtTokens;
-}
-
-export interface User {
-  id: string;
-  username: string;
-  xp: number;
-  level: number;
-  terrace_level: number;
-}
-
-export interface JwtTokens {
   access_token: string;
-  refresh_token: string;
+}
+
+export interface RefreshResponse {
+  access_token: string
 }

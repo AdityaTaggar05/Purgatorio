@@ -1,10 +1,14 @@
 import { useState, type ChangeEvent, type SubmitEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../../ui/layout/Auth';
 import { register } from '../../features/auth/authApi';
 import Snackbar from '../../ui/dialogs/Snackbar';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function RegisterPage() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -30,7 +34,8 @@ export default function RegisterPage() {
     setIsSubmitting(false);
     
     if (result.success) {
-      console.log(result)
+      login(result.data.access_token, result.data.user)
+      navigate('/game')
     } else {
       setError(result.error?.message || "An unexpected error occurred")
     }
