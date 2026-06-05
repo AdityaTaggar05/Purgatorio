@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode, useRef } from 'react';
 import { AuthContext } from './AuthContext';
 import type { User } from '../../types/user';
 import * as api from '../../features/auth/authApi'
@@ -11,44 +11,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+
   const login = (token: string, userData: User) => {
     setAccessToken(token);
     setUser(userData);
     localStorage.setItem('purgatorio_user', JSON.stringify(userData));
+    setIsLoading(false);
   };
 
   const logout = useCallback(() => {
     setAccessToken(null);
     setUser(null);
     localStorage.removeItem('purgatorio_user');
+    refreshPromiseRef.current = null;
   }, []);
 
   const getFreshToken = useCallback(async (): Promise<string | null> => {
-    try {
-      const response = await api.refresh()
-      if (!response.success) throw new Error('Session expired');
-      setAccessToken(response.data.access_token);
-      return response.data.access_token;
-    } catch {
-      logout();
-      return null;
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
     }
+
+    refreshPromiseRef.current = (async () => {
+      try {
+        const response = await api.refresh()
+        if (!response.success) throw new Error('Session expired');
+        setAccessToken(response.data.access_token);
+        return response.data.access_token;
+      } catch {
+        logout();
+        return null;
+      } finally {
+        refreshPromiseRef.current = null
+      }
+    })()
+
+    return refreshPromiseRef.current
   }, [logout]);
 
   useEffect(() => {
     let isMounted = true;
     const checkSession = async () => {
-      if (user) {
+      // If there is an active access token in memory, we are already logged in! Skip fetch.
+      if (user && !accessToken) { 
         await getFreshToken();
       }
-
       if (isMounted) {
         setIsLoading(false)
       }
     };
     checkSession();
     return () => { isMounted = false; };
-  }, [user, getFreshToken]);
+  }, [user, accessToken, getFreshToken]);
 
   return (
     <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, getFreshToken }}>
