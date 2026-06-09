@@ -1,26 +1,36 @@
+import { useState } from 'react';
 import GameCanvas from '../../game/phaser/GameCanvas';
+import { useAuth } from '../../hooks/useAuth';
+import GameHud from '../../ui/layout/GameHud';
 
 export default function GameDashboard() {
+  const { user, logout } = useAuth();
+
+  // Mock variables to be finally fetched from the backend
+  const [penitence, setPenitence] = useState({ current: 420, max: 1000, label: 'Penitence' });
+  const [grace, setGrace] = useState({ current: 85, max: 120, label: 'Grace' });
+  const [sinMeter, setSinMeter] = useState(68);
+
+  const handleAscension = () => console.log('Opening Altar Store Interface...');
+  const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
+  const handleArmy = () => console.log('Opening Legion Management Array...');
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#111111]">
 
       <GameCanvas />
 
-      <div className="absolute inset-0 pointer-events-none z-10 p-6 flex flex-col justify-between">
-        <header className="pointer-events-auto flex justify-between items-center bg-[#181716]/80 backdrop-blur-md border border-[#2c2927] p-4 rounded-lg shadow-lg max-w-2xl mx-auto w-full">
-          <div>
-            <h1 className="font-serif text-xl font-bold tracking-widest text-gray-200">
-              FIRST TERRACE
-            </h1>
-            <p className="text-xs text-amber-500/80 uppercase tracking-[0.2em]">
-              The Proud
-            </p>
-          </div>
-          <button className="bg-[#1e1d1c] hover:bg-amber-950/50 border border-[#2c2927] text-gray-300 px-4 py-2 rounded transition-all">
-            Inventory
-          </button>
-        </header>
-      </div>
+      <GameHud
+        username={user?.username || "Unknown Penitent"}
+        level={4}
+        penitence={penitence}
+        grace={grace}
+        sinMeter={sinMeter}
+        onAscensionClick={handleAscension}
+        onLogoutClick={logout}
+        onAttackClick={handleAttack}
+        onArmyClick={handleArmy}
+      />
     </div>
   );
 }
