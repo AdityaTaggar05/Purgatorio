@@ -22,7 +22,7 @@ export default function GameDashboard() {
 
       <GameHud
         username={user?.username || "Unknown Penitent"}
-        level={4}
+        level={user?.level || 1}
         penitence={penitence}
         grace={grace}
         sinMeter={sinMeter}

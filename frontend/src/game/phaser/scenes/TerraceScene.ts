@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 export class TerraceScene extends Phaser.Scene {
-  private tileWidth = 880;
-  private tileHeight = 542;
+  private tileWidth = 974;
+  private tileHeight = 552;
   private mapSize = 10;
 
   private minZoom = 0.2;
@@ -14,6 +14,7 @@ export class TerraceScene extends Phaser.Scene {
 
   preload() {
     this.load.image('ground-tile', 'assets/ground-tile.png');
+    this.load.image('ground-tile-edge', 'assets/ground-tile-edge.png');
   }
 
   create() {
@@ -25,20 +26,32 @@ export class TerraceScene extends Phaser.Scene {
     const groundLayer = this.add.layer();
     //const worldLayer = this.add.layer();
 
+    const texture = this.textures.get('ground-tile')
+    if (texture) {
+      texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+
+    const tilePositions = [];
+
     for (let y = 0; y < this.mapSize; y++) {
       for (let x = 0; x < this.mapSize; x++) {
         const { isoX, isoY } = this.cartesianToIso(x, y);
-
-        if (this.textures.exists('ground-tile')) {
-          const tile = this.add.image(isoX, isoY, 'ground-tile');
-          tile.setOrigin(0.5, 0.5);
-          tile.setSize(880, 542)
-          groundLayer.add(tile)
-        } else {
-          this.drawMockTile(isoX, isoY);
-        }
+        tilePositions.push({ x: isoX, y: isoY, depth: x + y, edge: y==this.mapSize-1 || x==this.mapSize-1 });
       }
     }
+
+    tilePositions.sort((a, b) => a.depth - b.depth);
+
+    tilePositions.forEach((pos) => {
+      let tile;
+
+      if (pos.edge) tile = this.add.image(pos.x, pos.y, 'ground-tile-edge')
+      else tile = this.add.image(pos.x, pos.y, 'ground-tile');
+
+      tile.setOrigin(0.5, 0.181);
+      tile.setDepth(pos.y);
+      groundLayer.add(tile)
+    });
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) return; // Only execute if mouse click is held down
@@ -63,21 +76,5 @@ export class TerraceScene extends Phaser.Scene {
     const isoX = (mapX - mapY) * (this.tileWidth / 2);
     const isoY = (mapX + mapY) * (this.tileHeight / 2);
     return { isoX, isoY };
-  }
-
-  private drawMockTile(x: number, y: number) {
-    const graphics = this.add.graphics();
-    graphics.lineStyle(1, 0x2c2927, 1);
-    graphics.fillStyle(0x181716, 1);
-
-    graphics.beginPath();
-    graphics.moveTo(x, y - this.tileHeight / 2);                 // Top
-    graphics.lineTo(x + this.tileWidth / 2, y);                  // Right
-    graphics.lineTo(x, y + this.tileHeight / 2);                 // Bottom
-    graphics.lineTo(x - this.tileWidth / 2, y);                  // Left
-    graphics.closePath();
-
-    graphics.fillPath();
-    graphics.strokePath();
   }
 }

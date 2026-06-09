@@ -17,7 +17,9 @@ export default function GameCanvas() {
       height: '100%',
       scene: [TerraceScene],
       transparent: true,
-      pixelArt: true, 
+      pixelArt: false, 
+      antialias: true,
+      antialiasGL: true,
       scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
