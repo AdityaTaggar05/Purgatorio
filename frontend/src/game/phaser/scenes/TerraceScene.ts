@@ -1,80 +1,62 @@
-import Phaser from 'phaser';
+import type { BaseLayout } from "../../../types/building";
+import { CameraManager } from "../managers/CameraManager";
+import { LayoutEngine } from "../managers/LayoutEngine";
+import { TerrainEngine } from "../managers/TerrainEngine";
+import Phaser from "phaser";
 
 export class TerraceScene extends Phaser.Scene {
-  private tileWidth = 974;
-  private tileHeight = 552;
-  private mapSize = 10;
-
-  private minZoom = 0.2;
-  private maxZoom = 0.6;
-
-  constructor() {
-    super({ key: 'TerraceScene' });
-  }
+  private terrain!: TerrainEngine;
+  private layoutEngine!: LayoutEngine;
+  private cameraManager!: CameraManager;
 
   preload() {
-    this.load.image('ground-tile', 'assets/ground-tile.png');
-    this.load.image('ground-tile-edge', 'assets/ground-tile-edge.png');
+    this.load.image('ground-tile', '/assets/ground-tile.png')
+    this.load.image('ground-tile-edge', '/assets/ground-tile-edge.png')
+
+    this.load.image('building_bastion', '/assets/bastion.png');
+    this.load.image('building_angel-spire', '/assets/angel-spire.png');
+    this.load.image('building_lament-basin', '/assets/lament-basin.png');
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#111111');
-    this.cameras.main.setZoom(0.4);
+    this.cameraManager = new CameraManager(this);
+    this.terrain = new TerrainEngine(this);
+    this.layoutEngine = new LayoutEngine(this);
 
-    this.cameras.main.centerOn(0, this.tileHeight * this.mapSize / 2);
-
-    const groundLayer = this.add.layer();
-    //const worldLayer = this.add.layer();
-
-    const texture = this.textures.get('ground-tile')
-    if (texture) {
-      texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    const baseLayoutJSON = `
+    {
+      "user_id": "user_penitent_777",
+      "tiles": 10,
+      "subgrid_factor": 3,
+      "buildings": [
+        {
+          "id": "bastion_001",
+          "x": 0,
+          "y": 0,
+          "size": 1
+        },
+        {
+          "id": "angel-spire_001",
+          "subgridX": 4,
+          "subgridY": 12,
+          "size": 2
+        },
+        {
+          "id": "lament-basin_001",
+          "subgridX": 15,
+          "subgridY": 15,
+          "size": 2
+        }
+      ]
     }
+    `
 
-    const tilePositions = [];
+    const baseLayout: BaseLayout = JSON.parse(baseLayoutJSON)
 
-    for (let y = 0; y < this.mapSize; y++) {
-      for (let x = 0; x < this.mapSize; x++) {
-        const { isoX, isoY } = this.cartesianToIso(x, y);
-        tilePositions.push({ x: isoX, y: isoY, depth: x + y, edge: y==this.mapSize-1 || x==this.mapSize-1 });
-      }
-    }
+    this.cameraManager.centerOnMap(baseLayout.tiles)
+    this.cameraManager.setBoundsFromMap(baseLayout.tiles)
 
-    tilePositions.sort((a, b) => a.depth - b.depth);
-
-    tilePositions.forEach((pos) => {
-      let tile;
-
-      if (pos.edge) tile = this.add.image(pos.x, pos.y, 'ground-tile-edge')
-      else tile = this.add.image(pos.x, pos.y, 'ground-tile');
-
-      tile.setOrigin(0.5, 0.181);
-      tile.setDepth(pos.y);
-      groundLayer.add(tile)
-    });
-
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.isDown) return; // Only execute if mouse click is held down
-
-      this.cameras.main.scrollX -= (pointer.x - pointer.prevPosition.x) / this.cameras.main.zoom;
-      this.cameras.main.scrollY -= (pointer.y - pointer.prevPosition.y) / this.cameras.main.zoom;
-    });
-
-    this.input.on('wheel', (_: unknown, __: unknown, ___: unknown, deltaY: number) => {
-      // Calculate new target zoom factor based on scroll depth
-      const zoomFactor = 0.1;
-      let newZoom = this.cameras.main.zoom - deltaY * zoomFactor * 0.01;
-
-      // Clamp values so user doesn't zoom out into oblivion or past max resolution
-      newZoom = Phaser.Math.Clamp(newZoom, this.minZoom, this.maxZoom);
-
-      this.cameras.main.setZoom(newZoom);
-    });
-  }
-
-  private cartesianToIso(mapX: number, mapY: number) {
-    const isoX = (mapX - mapY) * (this.tileWidth / 2);
-    const isoY = (mapX + mapY) * (this.tileHeight / 2);
-    return { isoX, isoY };
+    this.terrain.generateGroundGrid(baseLayout.tiles)
+    this.layoutEngine.renderLayout(baseLayout);
   }
 }
