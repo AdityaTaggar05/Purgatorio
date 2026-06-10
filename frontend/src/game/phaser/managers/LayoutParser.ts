@@ -2,7 +2,7 @@ import type { BaseLayout } from '../../../types/building';
 
 export class LayoutParser {
   static createOccupancyGrid(layout: BaseLayout): string[][] {
-    const gridSize = layout.tiles * layout.subgridFactor;
+    const gridSize = layout.tiles * layout.subgrid_factor;
 
     const matrix: string[][] = Array(gridSize).fill(null).map(() => Array(gridSize).fill('empty'));
 

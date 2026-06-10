@@ -1,4 +1,3 @@
-// src/game/phaser/managers/LayoutEngine.ts
 import Phaser from 'phaser';
 import type { BaseLayout } from '../../../types/building';
 import { IsoMath } from './IsoMath';
@@ -9,11 +8,13 @@ export class LayoutEngine {
   private buildingsLayer!: Phaser.GameObjects.Layer;
   public activeBuildings: BuildingSprite[] = [];
 
+  private DEPTH_OFFSET = 100
+
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.buildingsLayer = this.scene.add.layer();
     // Buildings sit safely on top of ground tiles
-    this.buildingsLayer.setDepth(10);
+    this.buildingsLayer.setDepth(this.DEPTH_OFFSET);
   }
 
   public renderLayout(layout: BaseLayout) {
@@ -21,7 +22,7 @@ export class LayoutEngine {
 
     layout.buildings.forEach((buildingData) => {
       const screenPos = IsoMath.subgridToScreen(
-        layout.subgridFactor,
+        layout.subgrid_factor,
         buildingData.x,
         buildingData.y,
         buildingData.size
@@ -29,13 +30,13 @@ export class LayoutEngine {
 
       const buildingInstance = new BuildingSprite(
         this.scene,
-        layout.subgridFactor,
+        layout.subgrid_factor,
         screenPos.x,
         screenPos.y,
         buildingData
       );
 
-      buildingInstance.setDepth(screenPos.y);
+      buildingInstance.setDepth(screenPos.y + this.DEPTH_OFFSET);
 
       this.activeBuildings.push(buildingInstance);
       this.buildingsLayer.add(buildingInstance);
@@ -43,7 +44,6 @@ export class LayoutEngine {
   }
 
   public clearBuildings() {
-    this.activeBuildings.forEach(b => b.destroy());
     this.activeBuildings = [];
     this.buildingsLayer.removeAll(true);
   }

@@ -43,7 +43,7 @@ export class TerrainEngine {
 
       tile.setOrigin(0.5, 0.45);
 
-      tile.setDepth(pos.y);
+      tile.setDepth(pos.gridX + pos.gridY);
       tile.setData('gridCoordinates', { x: pos.gridX, y: pos.gridY });
 
       this.groundLayer.add(tile);

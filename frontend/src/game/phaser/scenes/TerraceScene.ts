@@ -37,14 +37,14 @@ export class TerraceScene extends Phaser.Scene {
         },
         {
           "id": "angel-spire_001",
-          "subgridX": 4,
-          "subgridY": 12,
+          "x": 4,
+          "y": 12,
           "size": 2
         },
         {
           "id": "lament-basin_001",
-          "subgridX": 15,
-          "subgridY": 15,
+          "x": 4,
+          "y": 4,
           "size": 2
         }
       ]
@@ -52,6 +52,8 @@ export class TerraceScene extends Phaser.Scene {
     `
 
     const baseLayout: BaseLayout = JSON.parse(baseLayoutJSON)
+
+    console.log(baseLayout)
 
     this.cameraManager.centerOnMap(baseLayout.tiles)
     this.cameraManager.setBoundsFromMap(baseLayout.tiles)

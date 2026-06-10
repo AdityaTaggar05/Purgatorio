@@ -7,8 +7,8 @@ export interface BuildingData {
 }
 
 export interface BaseLayout {
-  userID: string;
+  user_id: string;
   tiles: number;
-  subgridFactor: number;
+  subgrid_factor: number;
   buildings: BuildingData[];
 }
