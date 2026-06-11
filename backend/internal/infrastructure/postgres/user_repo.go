@@ -85,3 +85,13 @@ func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) e
 	)
 	return err
 }
+
+func (r *UserRepository) GetUserByID(ctx context.Context, id string) (model.User, error) {
+	var user model.User
+
+	return user, nil
+}
+
+func (r *UserRepository) DeleteUser(ctx context.Context, id string) (error) {
+	return nil
+}

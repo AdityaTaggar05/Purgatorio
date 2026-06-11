@@ -14,4 +14,8 @@ type UserRepository interface {
 	GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error)
 	GetRefreshToken(ctx context.Context, token string) (model.RefreshToken, error)
 	RevokeRefreshToken(ctx context.Context, token string) error
+
+	// User Functions
+	GetUserByID(ctx context.Context, id string) (model.User, error)
+	DeleteUser(ctx context.Context, id string) (error)
 }
