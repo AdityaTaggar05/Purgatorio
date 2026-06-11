@@ -18,11 +18,9 @@ func NewUserService(userRepo repository.UserRepository) *UserService {
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, id string) (model.User, error) {
-	var user model.User
-
-	return user, nil
+	return s.UserRepo.GetUserByID(ctx, id)
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
-	return nil
+	return s.UserRepo.DeleteUser(ctx, id)
 }
