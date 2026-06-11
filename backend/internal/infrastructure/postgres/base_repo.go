@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/google/uuid"
@@ -25,9 +24,9 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
             bl.building_id,
             bl.level,
             curr.production_rate AS current_rate,
-            prev.production_rate AS previous_rate,
+						COALESCE(prev.production_rate, 0) AS previous_rate,
             bl.metadata
-        FROM base_layout bl
+        FROM base_layouts bl
 				JOIN buildings b
 						ON b.id = bl.building_id
         JOIN building_levels curr
@@ -37,12 +36,12 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
             ON prev.building_id = bl.building_id
            AND prev.level = bl.level - 1
         WHERE bl.user_id = $1
-          AND b.category = resource 
+          AND b.category = 'resource'
     `
 
 	rows, err := r.DB.Query(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("querying resource buildings: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -58,12 +57,14 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
 			&b.PreviousRate,
 			&b.Metadata,
 		); err != nil {
-			return nil, fmt.Errorf("scanning row: %w", err)
+			return nil, err
+		} else {
+			buildings = append(buildings, b)
 		}
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating rows: %w", err)
+		return nil, err
 	}
 
 	return buildings, nil
