@@ -104,6 +104,27 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
+func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	var eco model.UserEconomy
+	eco.ID = id
 
-func (r *UserRepository) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
+	query := `
+		SELECT penitence, grace, max_penitence, collector_pending_penitence, collector_reset_at
+		FROM user_economy
+		WHERE user_id=$1
+	`
+
+	err := r.DB.QueryRow( ctx, query, id).Scan(
+		&eco.Penitence,
+		&eco.Grace,
+		&eco.MaxPenitence,
+		&eco.CollectorPendingPenitence,
+		&eco.CollectorResetAt,
+	)
+
+	return eco, err
+}
+
+func (r *UserRepository) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	return model.UserEconomy{}, nil
+}

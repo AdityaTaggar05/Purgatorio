@@ -29,7 +29,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *UserService) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
-	return model.UserEconomy{}, nil
+	return s.UserRepo.GetEconomy(ctx, id)
 }
 
 func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
