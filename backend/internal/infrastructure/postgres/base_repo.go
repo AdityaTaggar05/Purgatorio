@@ -24,7 +24,7 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
             bl.building_id,
             bl.level,
             curr.production_rate AS current_rate,
-						COALESCE(prev.production_rate, 0) AS previous_rate,
+						curr.storage_capacity,
             bl.metadata
         FROM base_layouts bl
 				JOIN buildings b
@@ -32,9 +32,6 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
         JOIN building_levels curr
             ON curr.building_id = bl.building_id
            AND curr.level = bl.level
-        LEFT JOIN building_levels prev
-            ON prev.building_id = bl.building_id
-           AND prev.level = bl.level - 1
         WHERE bl.user_id = $1
           AND b.category = 'resource'
     `
@@ -54,7 +51,7 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
 			&b.BuildingID,
 			&b.BuildingLevel,
 			&b.CurrentRate,
-			&b.PreviousRate,
+			&b.StorageCapacity,
 			&b.Metadata,
 		); err != nil {
 			return nil, err

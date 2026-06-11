@@ -4,7 +4,7 @@ type Currency string
 
 const (
 	CurrencyPenitence Currency = "penitence"
-	CurrencyGrace Currency = "grace"
+	CurrencyGrace     Currency = "grace"
 )
 
 func (c Currency) String() string {
@@ -12,10 +12,10 @@ func (c Currency) String() string {
 }
 
 type ResourceGenerationInfo struct {
-	BuildingID    string
-	BuildingLevel int
-	CurrentRate   int
-	PreviousRate  int
-	Currency      Currency
-	Metadata      BuildingMetadata
+	BuildingID      string
+	BuildingLevel   int
+	CurrentRate     int
+	StorageCapacity int
+	Currency        Currency
+	Metadata        BuildingMetadata
 }
