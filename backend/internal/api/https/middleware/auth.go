@@ -11,6 +11,7 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/pkg/purgerr"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func RequestAuthenticator(publicKey *rsa.PublicKey) func(http.Handler) http.Handler {
@@ -28,16 +29,17 @@ func RequestAuthenticator(publicKey *rsa.PublicKey) func(http.Handler) http.Hand
     }
 }
 
-func parseAndVerify(tokenString string, publicKey *rsa.PublicKey) (string, error) {
+func parseAndVerify(tokenString string, publicKey *rsa.PublicKey) (uuid.UUID, error) {
     token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
         return publicKey, nil
     })
     if err != nil || !token.Valid {
-        return "", purgerr.Wrap(fmt.Errorf("invalid token"), err)
+        return uuid.Nil, purgerr.Wrap(fmt.Errorf("invalid token"), err)
     }
     claims := token.Claims.(jwt.MapClaims)
     sub, _ := claims["sub"].(string)
-    return sub, nil
+
+		return uuid.Parse(sub)
 }
 
 func extractToken(r *http.Request) string {

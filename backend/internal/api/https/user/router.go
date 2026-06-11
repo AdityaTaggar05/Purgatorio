@@ -8,7 +8,7 @@ func (h *UserHandler) Routes() chi.Router {
 	r.Get("/me", h.HandleMe)
 	r.Delete("/me", h.HandleDeleteUser)
 
-	r.Get("/:id", h.HandleGetUser)
+	r.Get("/{id}", h.HandleGetUser)
 
 	return r
 }
