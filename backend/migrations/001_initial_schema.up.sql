@@ -65,6 +65,7 @@ CREATE TABLE user_combat (
 CREATE TABLE buildings(
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
+  size INT NOT NULL CHECK (size >= 1),
   price INT NOT NULL CHECK (price >= 0),
   currency currency_type NOT NULL DEFAULT 'penitence',
   category building_category NOT NULL DEFAULT 'other',
