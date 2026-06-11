@@ -30,7 +30,7 @@ type Building struct {
 }
 
 type BuildingMetadata struct {
-	UpgradeEndsAt time.Time `json:"upgrade_ends_at"`
+	UpgradeEndsAt *time.Time `json:"upgrade_ends_at"`
 }
 
 type BaseLayout struct {
