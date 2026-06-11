@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
@@ -33,5 +34,48 @@ func (s *UserService) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserE
 }
 
 func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
-	return model.UserEconomy{}, nil
+	eco, err := s.UserRepo.GetEconomy(ctx, id)
+	if err != nil {
+		return eco, err
+	}
+
+	collectors, err := s.BaseRepo.GetResourceGenerationInfo(ctx, id)
+
+	if err != nil {
+		return eco, err
+	}
+
+	collectionTime := time.Now()
+	lastCollectionDuration := int(collectionTime.Sub(eco.CollectorResetAt).Seconds())
+
+	var collectedAmt int
+
+	for _, collector := range collectors {
+		var collection int
+
+		if collector.Metadata.UpgradeEndsAt != nil {
+			if collector.Metadata.UpgradeEndsAt.After(collectionTime) {
+				continue
+			}
+
+			collection += int(collectionTime.Sub(*collector.Metadata.UpgradeEndsAt).Seconds()) * collector.CurrentRate
+			collector.Metadata.UpgradeEndsAt = nil
+		} else {
+			collection += lastCollectionDuration * collector.CurrentRate
+		}
+
+		collectedAmt += min(collection, collector.StorageCapacity)
+	}
+
+	eco.Penitence += collectedAmt + eco.CollectorPendingPenitence
+
+	if eco.Penitence > eco.MaxPenitence {
+		eco.CollectorPendingPenitence = eco.Penitence - eco.MaxPenitence
+		eco.Penitence = eco.MaxPenitence
+	}
+
+	s.UserRepo.UpdateEconomy(ctx, eco)
+	//s.UserRepo.UpdateBuildingMetadata(ctx, info)
+
+	return eco, nil
 }
