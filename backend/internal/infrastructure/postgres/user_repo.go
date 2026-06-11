@@ -89,9 +89,16 @@ func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) e
 func (r *UserRepository) GetUserByID(ctx context.Context, id string) (model.User, error) {
 	var user model.User
 
-	return user, nil
+	err := r.DB.QueryRow(
+		ctx,
+		`SELECT id, username, xp, level, terrace_level FROM users WHERE id=$1`,
+		id,
+	).Scan(&user.ID, &user.Username, &user.XP, &user.Level, &user.TerraceLevel)
+
+	return user, err
 }
 
-func (r *UserRepository) DeleteUser(ctx context.Context, id string) (error) {
-	return nil
+func (r *UserRepository) DeleteUser(ctx context.Context, id string) error {
+	_, err := r.DB.Exec( ctx, `DELETE FROM auth WHERE id=$1`, id)
+	return err
 }
