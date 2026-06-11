@@ -18,8 +18,8 @@ type LoginRequestDTO struct {
 }
 
 type LoginResponseDTO struct {
-	User        model.User `json:"user"`
-	AccessToken string     `json:"access_token"`
+	User        model.AuthAndUser `json:"user"`
+	AccessToken string            `json:"access_token"`
 }
 
 func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +47,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		})
 
 		response.JSON(w, http.StatusOK, LoginResponseDTO{
-			User:   user,
+			User:        user,
 			AccessToken: tokens.AccessToken,
 		})
 	} else {

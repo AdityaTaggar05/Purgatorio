@@ -8,9 +8,10 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(context.Context, string, string, string) (model.User, error)
-	CreateRefreshToken(context.Context, string, string, time.Time) error
-	GetAuthAndUserByEmail(context.Context, string) (model.AuthAndUser, error)
-	GetRefreshToken(context.Context, string) (model.RefreshToken, error)
-	RevokeRefreshToken(context.Context, string) error
+	// Auth Functions
+	CreateUser(ctx context.Context, email string, hash string, username string) (model.User, error)
+	CreateRefreshToken(ctx context.Context, userID string, token string, ttl time.Time) error
+	GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error)
+	GetRefreshToken(ctx context.Context, token string) (model.RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, token string) error
 }
