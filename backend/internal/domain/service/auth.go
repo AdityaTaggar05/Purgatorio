@@ -60,9 +60,9 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 	return user, tokens, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (model.User, model.TokenPair, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (model.AuthAndUser, model.TokenPair, error) {
 	var (
-		user   model.User
+		user   model.AuthAndUser
 		tokens model.TokenPair
 	)
 

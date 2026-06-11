@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type SigningKey struct {
@@ -23,13 +24,13 @@ type TokenPair struct {
 }
 
 type RefreshToken struct {
-	UserID    string
+	UserID    uuid.UUID
 	Token     string
 	Revoked   bool
 	ExpiresAt time.Time
 }
 
-func GenerateRefreshToken(userID string, ttl time.Duration) (RefreshToken, error) {
+func GenerateRefreshToken(userID uuid.UUID, ttl time.Duration) (RefreshToken, error) {
 	b := make([]byte, 32)
 
 	_, err := rand.Read(b)
@@ -61,7 +62,7 @@ func (s *SigningKey) PublicKeyToJWK() map[string]string {
 	}
 }
 
-func GenerateJWT(userID string, signingKey *SigningKey, ttl time.Duration) (string, error) {
+func GenerateJWT(userID uuid.UUID, signingKey *SigningKey, ttl time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"sub": userID,
 		"exp": jwt.NewNumericDate(time.Now().Add(ttl)),

@@ -12,6 +12,7 @@ import (
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/user"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
@@ -53,12 +54,14 @@ func New(cfg *config.Config) (*App, error) {
 	}
 
 	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
+	userService := service.NewUserService(userRepo)
 
 	// 5) Handler Setup
 	authHandler := auth.NewHandler(logger, authService)
+	userHandler := user.NewHandler(logger, userService)
 
 	// 6) Router Setup
-	router := https.NewRouter(logger, authHandler)
+	router := https.NewRouter(logger, signingKey.PublicKey, authHandler, userHandler)
 
 	// 7) Server Setup
 	return &App{

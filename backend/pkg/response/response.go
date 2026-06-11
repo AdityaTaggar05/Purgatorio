@@ -6,8 +6,15 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/middleware"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/ctxkeys"
 )
+
+// Intercepts useful information for logging
+// Also used for intercepting response error messages and even redacting information about the error
+type LogContext struct {
+	UserID string
+	Error  error
+}
 
 type Response struct {
 	Success bool       `json:"success"`
@@ -65,7 +72,7 @@ func Error(ctx context.Context, w http.ResponseWriter, statusCode int, err error
 	w.WriteHeader(statusCode)
 
 	// Logging error with full details
-	if logCtx, ok := ctx.Value(middleware.LogContextKey).(*middleware.LogContext); ok {
+	if logCtx, ok := ctx.Value(ctxkeys.Log).(*LogContext); ok {
 		logCtx.Error = err
 	}
 

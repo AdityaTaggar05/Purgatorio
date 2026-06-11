@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,8 +39,8 @@ func (r *UserRepository) CreateUser(ctx context.Context, email, hash, username s
 	return user, err
 }
 
-func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string) (model.User, error) {
-	var user model.User
+func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error) {
+	var user model.AuthAndUser
 
 	query := `
 		SELECT auth.id, auth.password_hash, users.username, users.xp, users.level, users.terrace_level
@@ -55,7 +56,7 @@ func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string
 	return user, err
 }
 
-func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID, token string, exp time.Time) error {
+func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID uuid.UUID, token string, exp time.Time) error {
 	_, err := r.DB.Exec(
 		ctx,
 		`INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
@@ -83,5 +84,22 @@ func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) e
 		`UPDATE refresh_tokens SET revoked=true WHERE token=$1`,
 		token,
 	)
+	return err
+}
+
+func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (model.User, error) {
+	var user model.User
+
+	err := r.DB.QueryRow(
+		ctx,
+		`SELECT id, username, xp, level, terrace_level FROM users WHERE id=$1`,
+		id,
+	).Scan(&user.ID, &user.Username, &user.XP, &user.Level, &user.TerraceLevel)
+
+	return user, err
+}
+
+func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := r.DB.Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
 	return err
 }
