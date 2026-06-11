@@ -112,8 +112,7 @@ CREATE TABLE base_layouts(
   x INT NOT NULL CHECK (x >= 0),
   y INT NOT NULL CHECK (y >= 0),
   metadata JSONB,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (user_id, building_id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Army and Troops Management
@@ -162,3 +161,4 @@ CREATE TABLE battle_replays(
 CREATE INDEX idx_battle_logs_attacker ON battles(attacker_id, started_at DESC); -- to view attack logs
 CREATE INDEX idx_battle_logs_defender ON battles(defender_id, started_at DESC); -- to view defense logs
 CREATE INDEX idx_player_leagues ON users(terrace_level); -- for and when leagues are implemented
+CREATE INDEX idx_base_layouts_user ON base_layouts(user_id);
