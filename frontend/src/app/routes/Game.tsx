@@ -1,22 +1,36 @@
-import { useAuth } from "../../hooks/useAuth";
-import * as api from "../../features/auth/authApi"
+import { useState } from 'react';
+import GameCanvas from '../../game/phaser/GameCanvas';
+import { useAuth } from '../../hooks/useAuth';
+import GameHud from '../../ui/layout/GameHud';
 
-export default function GamePage() {
-  const { user, logout } = useAuth()
+export default function GameDashboard() {
+  const { user, logout } = useAuth();
 
-  return <div className="flex items-center justify-center flex-col h-screen bg-[color-purgatory-bg]">
-    <h1> Logged in as {user?.username} </h1>
-    <span>
-      <button onClick={async () => {
-        const ok = await api.logout()
+  // Mock variables to be finally fetched from the backend
+  const [penitence, setPenitence] = useState({ current: 420, max: 1000, label: 'Penitence' });
+  const [grace, setGrace] = useState({ current: 85, max: 120, label: 'Grace' });
+  const [sinMeter, setSinMeter] = useState(68);
 
-        if (ok) logout()
-      }}
-        type="submit"
-        className="w-full font-serif bg-purgatory-border hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-500/60 text-gray-200 px-16 py-3 rounded text-sm tracking-widest font-semibold transition-all duration-300 mt-4 shadow-lg hover:cursor-pointer"
-      >
-        Log Out
-      </button>
-    </span>
-  </div>
+  const handleAscension = () => console.log('Opening Altar Store Interface...');
+  const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
+  const handleArmy = () => console.log('Opening Legion Management Array...');
+
+  return (
+    <div className="relative w-screen h-screen overflow-hidden bg-[#111111]">
+
+      <GameCanvas />
+
+      <GameHud
+        username={user?.username || "Unknown Penitent"}
+        level={user?.level || 1}
+        penitence={penitence}
+        grace={grace}
+        sinMeter={sinMeter}
+        onAscensionClick={handleAscension}
+        onLogoutClick={logout}
+        onAttackClick={handleAttack}
+        onArmyClick={handleArmy}
+      />
+    </div>
+  );
 }
