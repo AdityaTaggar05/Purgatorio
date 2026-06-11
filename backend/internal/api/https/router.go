@@ -6,12 +6,13 @@ import (
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/middleware"
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/user"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler) *chi.Mux {
+func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler, userHandler *user.UserHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestLogger(logger))
@@ -44,6 +45,8 @@ func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler) *chi.Mux {
 
 	r.Mount("/auth", authHandler.Routes())
 	r.Get("/.well-known/jwks.json", authHandler.HandleJWKS)
+
+	r.Mount("/user", userHandler.Routes())
 
 	return r
 }
