@@ -61,7 +61,7 @@ func New(cfg *config.Config) (*App, error) {
 	userHandler := user.NewHandler(logger, userService)
 
 	// 6) Router Setup
-	router := https.NewRouter(logger, authHandler, userHandler)
+	router := https.NewRouter(logger, signingKey.PublicKey, authHandler, userHandler)
 
 	// 7) Server Setup
 	return &App{

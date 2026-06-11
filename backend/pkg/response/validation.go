@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/middleware"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/ctxkeys"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -21,7 +21,7 @@ type FieldError struct {
 // ValidationFailed writes a 422 with clean FieldErrors to the consumer.
 func ValidationFailed(ctx context.Context, w http.ResponseWriter, err error) {
 	// Preserve raw validator error for internal logging
-	if logCtx, ok := ctx.Value(middleware.LogContextKey).(*middleware.LogContext); ok {
+	if logCtx, ok := ctx.Value(ctxkeys.Log).(*LogContext); ok {
 		logCtx.Error = err
 	}
 

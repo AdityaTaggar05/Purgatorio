@@ -6,16 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/AdityaTaggar05/Purgatorio/pkg/ctxkeys"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 )
-
-// Intercepts useful information for logging
-// Also used for intercepting response error messages and even redacting information about the error
-const LogContextKey = "<log_ctx>"
-
-type LogContext struct {
-	UserID string
-	Error  error
-}
 
 // Extending the default request reader interface to add custom fields
 type customReadCloser struct {
@@ -56,7 +50,7 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			logCtx := &LogContext{}
+			logCtx := &response.LogContext{}
 
 			// Intercepting Requests
 			requestReader := &customReadCloser{ReadCloser: r.Body}
@@ -65,7 +59,7 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Intercepting Responses
 			responseReader := &customResponseWriter{ResponseWriter: w}
 
-			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), LogContextKey, logCtx)))
+			next.ServeHTTP(responseReader, r.WithContext(context.WithValue(r.Context(), ctxkeys.Log, logCtx)))
 
 			attrs := []any{
 				slog.String("method", r.Method),

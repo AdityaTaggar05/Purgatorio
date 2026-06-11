@@ -1,6 +1,7 @@
 package https
 
 import (
+	"crypto/rsa"
 	"log/slog"
 	"net/http"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler, userHandler *user.UserHandler) *chi.Mux {
+func NewRouter(logger *slog.Logger, publicKey *rsa.PublicKey, authHandler *auth.AuthHandler, userHandler *user.UserHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestLogger(logger))
@@ -46,7 +47,11 @@ func NewRouter(logger *slog.Logger, authHandler *auth.AuthHandler, userHandler *
 	r.Mount("/auth", authHandler.Routes())
 	r.Get("/.well-known/jwks.json", authHandler.HandleJWKS)
 
-	r.Mount("/user", userHandler.Routes())
+	protected := chi.NewMux()
+	protected.Use(middleware.RequestAuthenticator(publicKey))
+	protected.Mount("/user", userHandler.Routes())
+
+	r.Mount("/", protected)
 
 	return r
 }
