@@ -10,7 +10,7 @@ import (
 type UserRepository interface {
 	CreateUser(context.Context, string, string, string) (model.User, error)
 	CreateRefreshToken(context.Context, string, string, time.Time) error
-	GetAuthAndUserByEmail(context.Context, string) (model.User, error)
+	GetAuthAndUserByEmail(context.Context, string) (model.AuthAndUser, error)
 	GetRefreshToken(context.Context, string) (model.RefreshToken, error)
 	RevokeRefreshToken(context.Context, string) error
 }

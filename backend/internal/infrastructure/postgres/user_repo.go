@@ -38,8 +38,8 @@ func (r *UserRepository) CreateUser(ctx context.Context, email, hash, username s
 	return user, err
 }
 
-func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string) (model.User, error) {
-	var user model.User
+func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error) {
+	var user model.AuthAndUser
 
 	query := `
 		SELECT auth.id, auth.password_hash, users.username, users.xp, users.level, users.terrace_level
