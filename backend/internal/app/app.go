@@ -46,6 +46,7 @@ func New(cfg *config.Config) (*App, error) {
 
 	// 3) Repository Setup
 	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
+	var baseRepo repository.BaseRepository = postgres.NewBaseRepository(db)
 
 	// 4) Service Setup
 	signingKey, err := token.LoadSigningKey(cfg.JWT)
@@ -54,7 +55,7 @@ func New(cfg *config.Config) (*App, error) {
 	}
 
 	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, baseRepo)
 
 	// 5) Handler Setup
 	authHandler := auth.NewHandler(logger, authService)

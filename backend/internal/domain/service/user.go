@@ -10,11 +10,13 @@ import (
 
 type UserService struct {
 	UserRepo repository.UserRepository
+	BaseRepo repository.BaseRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) *UserService {
+func NewUserService(userRepo repository.UserRepository, baseRepo repository.BaseRepository) *UserService {
 	return &UserService{
 		UserRepo: userRepo,
+		BaseRepo: baseRepo,
 	}
 }
 
@@ -24,4 +26,12 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (model.User
 
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return s.UserRepo.DeleteUser(ctx, id)
+}
+
+func (s *UserService) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	return model.UserEconomy{}, nil
+}
+
+func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	return model.UserEconomy{}, nil
 }

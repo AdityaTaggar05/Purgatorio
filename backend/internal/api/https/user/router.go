@@ -10,5 +10,8 @@ func (h *UserHandler) Routes() chi.Router {
 
 	r.Get("/{id}", h.HandleGetUser)
 
+	r.Get("/economy", h.HandleGetEconomy)
+	r.Post("/economy/collect", h.HandleEconomyCollect)
+
 	return r
 }

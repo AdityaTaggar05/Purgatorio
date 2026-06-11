@@ -103,3 +103,7 @@ func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := r.DB.Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
 	return err
 }
+
+func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
+
+func (r *UserRepository) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
