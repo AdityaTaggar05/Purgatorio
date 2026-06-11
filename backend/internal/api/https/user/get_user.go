@@ -20,12 +20,12 @@ func (h *UserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user, err := h.Service.GetUserByID(r.Context(), id); err == nil {
+	if user, err := h.Service.GetUserByID(r.Context(), uuid.MustParse(id)); err == nil {
 		response.JSON(w, http.StatusOK, user)
 	} else {
 		switch {
 		case errors.Is(err, service.ErrUserNotFound):
-			response.Error(r.Context(), w, http.StatusNotFound, err)
+			response.NotFound(r.Context(), w, err)
 		default:
 			response.InternalServerError(r.Context(), w, err)
 		}

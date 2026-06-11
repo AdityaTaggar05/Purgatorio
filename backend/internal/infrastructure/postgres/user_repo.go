@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -55,7 +56,7 @@ func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string
 	return user, err
 }
 
-func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID, token string, exp time.Time) error {
+func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID uuid.UUID, token string, exp time.Time) error {
 	_, err := r.DB.Exec(
 		ctx,
 		`INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
@@ -86,7 +87,7 @@ func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) e
 	return err
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, id string) (model.User, error) {
+func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (model.User, error) {
 	var user model.User
 
 	err := r.DB.QueryRow(
@@ -98,7 +99,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id string) (model.User
 	return user, err
 }
 
-func (r *UserRepository) DeleteUser(ctx context.Context, id string) error {
-	_, err := r.DB.Exec( ctx, `DELETE FROM auth WHERE id=$1`, id)
+func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := r.DB.Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
 	return err
 }
