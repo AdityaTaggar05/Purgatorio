@@ -10,4 +10,8 @@ var (
 	ErrInvalidPasswordFormat     = errors.New("invalid password format")
 	ErrInvalidRefreshTokenFormat = errors.New("invalid refresh token format")
 	ErrInvalidRefreshToken       = errors.New("token has expired or has been revoked")
+
+	ErrInsufficientResources = errors.New("insufficient resources")
+	ErrBuildingLimitReached  = errors.New("building limit reached for this terrace level")
+	ErrBuildingNotFound      = errors.New("building not found")
 )

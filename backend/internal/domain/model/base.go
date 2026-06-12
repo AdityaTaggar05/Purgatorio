@@ -9,10 +9,10 @@ import (
 type BuildingCategory string
 
 const (
-	BuildingDefense BuildingCategory = "defense"
-	BuildingArmy BuildingCategory = "army"
+	BuildingDefense  BuildingCategory = "defense"
+	BuildingArmy     BuildingCategory = "army"
 	BuildingResource BuildingCategory = "resource"
-	BuildingOther BuildingCategory = "other"
+	BuildingOther    BuildingCategory = "other"
 )
 
 func (b BuildingCategory) String() string {
@@ -26,14 +26,39 @@ type Building struct {
 	Price    int              `json:"price"`
 	Currency Currency         `json:"currency"`
 	Category BuildingCategory `json:"category"`
-	Metadata BuildingMetadata `json:"metadata"`
 }
 
 type BuildingMetadata struct {
 	UpgradeEndsAt *time.Time `json:"upgrade_ends_at"`
 }
 
-type BaseLayout struct {
-	UserID    uuid.UUID  `json:"user_id"`
-	Buildings []Building `json:"buildings"`
+type PlacedBuilding struct {
+	UserID     uuid.UUID
+	BuildingID string
+	X          int
+	Y          int
+	Level      int
+	Metadata   *BuildingMetadata
+}
+
+type PlacedBuildingResponse struct {
+	BuildingID      string           `json:"building_id"`
+	Name            string           `json:"name"`
+	Category        BuildingCategory `json:"category"`
+	Level           int              `json:"level"`
+	X               int              `json:"x"`
+	Y               int              `json:"y"`
+	Size            int              `json:"size"`
+	HP              *int             `json:"hp"`
+	DPS             *int             `json:"dps"`
+	AttackRange     *float64         `json:"attack_range"`
+	ProductionRate  *int             `json:"production_rate"`
+	StorageCapacity *int             `json:"storage_capacity"`
+	Metadata        *BuildingMetadata `json:"metadata,omitempty"`
+}
+
+type BaseLayoutResponse struct {
+	Buildings []PlacedBuildingResponse `json:"buildings"`
+	GridW     int                      `json:"grid_w"`
+	GridH     int                      `json:"grid_h"`
 }
