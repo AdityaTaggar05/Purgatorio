@@ -9,5 +9,5 @@ import (
 
 type BaseRepository interface {
 	GetResourceGenerationInfo(ctx context.Context, userID uuid.UUID) ([]model.ResourceGenerationInfo, error)
-	RemoveUpgradeInfo(ctx context.Context, userID uuid.UUID) error
+	RemoveUpgradeInfo(ctx context.Context, userID uuid.UUID, category model.BuildingCategory) error
 }
