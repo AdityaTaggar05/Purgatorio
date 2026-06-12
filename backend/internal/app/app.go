@@ -12,6 +12,7 @@ import (
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/shop"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/user"
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
@@ -47,6 +48,7 @@ func New(cfg *config.Config) (*App, error) {
 	// 3) Repository Setup
 	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
 	var baseRepo repository.BaseRepository = postgres.NewBaseRepository(db)
+	var shopRepo repository.ShopRepository = postgres.NewShopRepository(db)
 
 	// 4) Service Setup
 	signingKey, err := token.LoadSigningKey(cfg.JWT)
@@ -56,13 +58,15 @@ func New(cfg *config.Config) (*App, error) {
 
 	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
 	userService := service.NewUserService(userRepo, baseRepo)
+	shopService := service.NewShopService(shopRepo, userRepo)
 
 	// 5) Handler Setup
 	authHandler := auth.NewHandler(logger, authService)
 	userHandler := user.NewHandler(logger, userService)
+	shopHandler := shop.NewHandler(logger, shopService)
 
 	// 6) Router Setup
-	router := https.NewRouter(logger, signingKey.PublicKey, authHandler, userHandler)
+	router := https.NewRouter(logger, signingKey.PublicKey, authHandler, userHandler, shopHandler)
 
 	// 7) Server Setup
 	return &App{
