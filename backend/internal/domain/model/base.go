@@ -29,7 +29,7 @@ type Building struct {
 }
 
 type BuildingMetadata struct {
-	UpgradeEndsAt *time.Time `json:"upgrade_ends_at"`
+	UpgradeEndsAt *time.Time `json:"upgrade_ends_at,omitempty"`
 }
 
 type PlacedBuilding struct {
@@ -49,11 +49,11 @@ type PlacedBuildingResponse struct {
 	X               int              `json:"x"`
 	Y               int              `json:"y"`
 	Size            int              `json:"size"`
-	HP              *int             `json:"hp"`
-	DPS             *int             `json:"dps"`
-	AttackRange     *float64         `json:"attack_range"`
-	ProductionRate  *int             `json:"production_rate"`
-	StorageCapacity *int             `json:"storage_capacity"`
+	HP              *int             `json:"hp,omitempty"`
+	DPS             *int             `json:"dps,omitempty"`
+	AttackRange     *float64         `json:"attack_range,omitempty"`
+	ProductionRate  *int             `json:"production_rate,omitempty"`
+	StorageCapacity *int             `json:"storage_capacity,omitempty"`
 	Metadata        *BuildingMetadata `json:"metadata,omitempty"`
 }
 
