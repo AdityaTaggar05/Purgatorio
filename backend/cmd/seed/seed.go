@@ -117,48 +117,49 @@ func main() {
 	// 3. Building levels
 	// ---------------------------------------------------------------
 	type levelDef struct {
-		buildingID  string
-		level       int
-		hp          *int
-		dps         *float64
-		productionRate *float64
-		storageCap  *int
-		upgradeCost int
-		upgradeTime int
+		buildingID    string
+		level         int
+		hp            *int
+		dps           *int
+		productionRate *int
+		storageCap    *int
+		attackRange   *float64
+		upgradeCost   int
+		upgradeTime   int
 	}
 
 	intp := func(v int) *int { return &v }
 	floatp := func(v float64) *float64 { return &v }
 
 	levels := []levelDef{
-		// Bastion (wall): only HP scales, no damage/production/storage
-		{"bastion", 1, intp(300), nil, nil, nil, 50, 60},
-		{"bastion", 2, intp(500), nil, nil, nil, 150, 300},
-		{"bastion", 3, intp(800), nil, nil, nil, 400, 900},
-		{"bastion", 4, intp(1200), nil, nil, nil, 900, 1800},
+		// Bastion (wall): only HP scales, no damage/production/storage/range
+		{"bastion", 1, intp(300), nil, nil, nil, nil, 50, 60},
+		{"bastion", 2, intp(500), nil, nil, nil, nil, 150, 300},
+		{"bastion", 3, intp(800), nil, nil, nil, nil, 400, 900},
+		{"bastion", 4, intp(1200), nil, nil, nil, nil, 900, 1800},
 
-		// Angel Spire: ranged defense, has HP + damage_per_second
-		{"angel-spire", 1, intp(450), floatp(12), nil, nil, 500, 600},
-		{"angel-spire", 2, intp(600), floatp(18), nil, nil, 1200, 1800},
-		{"angel-spire", 3, intp(800), floatp(26), nil, nil, 2500, 3600},
-		{"angel-spire", 4, intp(1050), floatp(36), nil, nil, 5000, 7200},
-		{"angel-spire", 5, intp(1400), floatp(50), nil, nil, 9000, 14400},
+		// Angel Spire: ranged defense attack_range 5.0
+		{"angel-spire", 1, intp(450), intp(12), nil, nil, floatp(5.0), 500, 600},
+		{"angel-spire", 2, intp(600), intp(18), nil, nil, floatp(5.0), 1200, 1800},
+		{"angel-spire", 3, intp(800), intp(26), nil, nil, floatp(5.0), 2500, 3600},
+		{"angel-spire", 4, intp(1050), intp(36), nil, nil, floatp(5.0), 5000, 7200},
+		{"angel-spire", 5, intp(1400), intp(50), nil, nil, floatp(5.0), 9000, 14400},
 
-		// Lament Basin: resource collector, has HP + production_rate (penitence/sec) + storage cap before collection
-		{"lament-basin", 1, intp(400), nil, floatp(2.0), intp(500), 300, 600},
-		{"lament-basin", 2, intp(550), nil, floatp(3.5), intp(1000), 800, 1800},
-		{"lament-basin", 3, intp(700), nil, floatp(5.5), intp(1800), 2000, 3600},
-		{"lament-basin", 4, intp(900), nil, floatp(8.0), intp(3000), 4500, 7200},
-		{"lament-basin", 5, intp(1150), nil, floatp(11.5), intp(5000), 9000, 14400},
+		// Lament Basin: resource collector, production_rate in penitence/sec (int), no attack range
+		{"lament-basin", 1, intp(400), nil, intp(2), intp(500), nil, 300, 600},
+		{"lament-basin", 2, intp(550), nil, intp(4), intp(1000), nil, 800, 1800},
+		{"lament-basin", 3, intp(700), nil, intp(6), intp(1800), nil, 2000, 3600},
+		{"lament-basin", 4, intp(900), nil, intp(8), intp(3000), nil, 4500, 7200},
+		{"lament-basin", 5, intp(1150), nil, intp(12), intp(5000), nil, 9000, 14400},
 	}
 
 	for _, lv := range levels {
 		_, err = tx.Exec(ctx, `
 			INSERT INTO building_levels
-				(building_id, level, hp, damage_per_second, production_rate, storage_capacity, upgrade_cost, upgrade_time)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				(building_id, level, hp, damage_per_second, production_rate, storage_capacity, attack_range, upgrade_cost, upgrade_time)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			ON CONFLICT (building_id, level) DO NOTHING
-		`, lv.buildingID, lv.level, lv.hp, lv.dps, lv.productionRate, lv.storageCap, lv.upgradeCost, lv.upgradeTime)
+		`, lv.buildingID, lv.level, lv.hp, lv.dps, lv.productionRate, lv.storageCap, lv.attackRange, lv.upgradeCost, lv.upgradeTime)
 		if err != nil {
 			log.Fatalf("insert building_level %s/%d: %v", lv.buildingID, lv.level, err)
 		}
@@ -168,26 +169,31 @@ func main() {
 	// 4. Troops
 	// ---------------------------------------------------------------
 	type troopDef struct {
-		id           string
-		name         string
-		trainingCost int
-		space        int
+		id              string
+		name            string
+		trainingCost    int
+		space           int
+		hp              int
+		dps             int
+		speed           float64
+		attackRange     float64
+		preferredTarget string
 	}
 
 	troops := []troopDef{
-		{"stone-bearer", "Stone Bearer", 80, 6},  // tank, high cost+space
-		{"ashwalker", "Ashwalker", 60, 3},        // glass cannon, light
-		{"hoarder", "Hoarder", 50, 4},            // resource hunter, medium
-		{"ravager", "Ravager", 90, 7},            // wall breaker, heavy
-		{"coveter", "Coveter", 30, 2},            // burst amplifier, cheap & light
+		{"stone-bearer", "Stone Bearer", 80, 6, 300, 12, 1.0, 1.0, "defense"},
+		{"ashwalker", "Ashwalker", 60, 3, 80, 25, 2.0, 2.0, "defense"},
+		{"hoarder", "Hoarder", 50, 4, 120, 18, 1.5, 1.5, "resource"},
+		{"ravager", "Ravager", 90, 7, 200, 40, 1.2, 1.0, "defense"},
+		{"coveter", "Coveter", 30, 2, 60, 15, 2.5, 3.0, "any"},
 	}
 
 	for _, t := range troops {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO troops (id, name, training_cost, space)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO troops (id, name, training_cost, space, hp, dps, speed, attack_range, preferred_target)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			ON CONFLICT (id) DO NOTHING
-		`, t.id, t.name, t.trainingCost, t.space)
+		`, t.id, t.name, t.trainingCost, t.space, t.hp, t.dps, t.speed, t.attackRange, t.preferredTarget)
 		if err != nil {
 			log.Fatalf("insert troop %s: %v", t.id, err)
 		}
