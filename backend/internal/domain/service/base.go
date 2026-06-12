@@ -99,7 +99,12 @@ func (s *BaseService) PlaceBuilding(ctx context.Context, userID uuid.UUID, build
 		return purgerr.Wrap(ErrNotEnoughBuildingsInInventory, ErrNotEnoughBuildingsInInventory)
 	}
 
-	if err := s.checkOverlap(ctx, placed, buildingID, x, y, building.Size); err != nil {
+	sizes, err := s.buildingSizeMap(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := checkOverlap(placed, sizes, x, y, building.Size); err != nil {
 		return err
 	}
 
@@ -164,7 +169,20 @@ func (s *BaseService) MoveBuilding(ctx context.Context, userID uuid.UUID, buildi
 		return purgerr.Wrap(fmt.Errorf("failed to get layout"), err)
 	}
 
-	if err := s.checkOverlap(ctx, placed, buildingID, toX, toY, building.Size); err != nil {
+	sizes, err := s.buildingSizeMap(ctx)
+	if err != nil {
+		return err
+	}
+
+	filtered := make([]model.PlacedBuilding, 0, len(placed))
+	for _, pb := range placed {
+		if pb.BuildingID == buildingID && pb.X == fromX && pb.Y == fromY {
+			continue
+		}
+		filtered = append(filtered, pb)
+	}
+
+	if err := checkOverlap(filtered, sizes, toX, toY, building.Size); err != nil {
 		return err
 	}
 
@@ -175,18 +193,27 @@ func (s *BaseService) MoveBuilding(ctx context.Context, userID uuid.UUID, buildi
 	return nil
 }
 
-func (s *BaseService) checkOverlap(ctx context.Context, placed []model.PlacedBuilding, buildingID string, x, y, size int) error {
+func (s *BaseService) buildingSizeMap(ctx context.Context) (map[string]int, error) {
+	buildings, err := s.ShopRepo.GetAllBuildings(ctx)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to resolve building sizes"), err)
+	}
+
+	sizes := make(map[string]int, len(buildings))
+	for _, b := range buildings {
+		sizes[b.ID] = b.Size
+	}
+	return sizes, nil
+}
+
+func checkOverlap(placed []model.PlacedBuilding, sizes map[string]int, x, y, size int) error {
 	for _, pb := range placed {
-		if pb.BuildingID == buildingID && pb.X == x && pb.Y == y {
+		pbSize, ok := sizes[pb.BuildingID]
+		if !ok {
 			continue
 		}
 
-		b, err := s.ShopRepo.GetBuildingByID(ctx, pb.BuildingID)
-		if err != nil {
-			continue
-		}
-
-		if overlap(pb.X, pb.Y, b.Size, x, y, size) {
+		if overlap(pb.X, pb.Y, pbSize, x, y, size) {
 			return purgerr.Wrap(ErrPositionOccupied, ErrPositionOccupied)
 		}
 	}
