@@ -13,9 +13,8 @@ type BuildingLevel struct {
 }
 
 type ShopItem struct {
-	Building     Building        `json:"building"`
-	CurrentOwned int             `json:"current_owned"`
-	MaxAllowed   int             `json:"max_allowed"`
-	CanBuy       bool            `json:"can_buy"`
-	Levels       []BuildingLevel `json:"levels"`
+	Building     Building `json:"building"`
+	CurrentOwned int      `json:"current_owned"`
+	MaxAllowed   int      `json:"max_allowed"`
+	CanBuy       bool     `json:"can_buy"`
 }

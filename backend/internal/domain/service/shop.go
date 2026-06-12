@@ -45,17 +45,11 @@ func (s *ShopService) GetShop(ctx context.Context, userID uuid.UUID) ([]model.Sh
 		owned := counts[b.ID]
 		maxAllowed := limits[b.ID]
 
-		levels, err := s.ShopRepo.GetBuildingLevels(ctx, b.ID)
-		if err != nil {
-			return nil, purgerr.Wrap(fmt.Errorf("failed to get building levels"), err)
-		}
-
 		items = append(items, model.ShopItem{
 			Building:     b,
 			CurrentOwned: owned,
 			MaxAllowed:   maxAllowed,
 			CanBuy:       owned < maxAllowed,
-			Levels:       levels,
 		})
 	}
 
