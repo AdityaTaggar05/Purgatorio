@@ -19,4 +19,8 @@ type UserRepository interface {
 	// User Functions
 	GetUserByID(ctx context.Context, id uuid.UUID) (model.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+
+	// Economy Functions
+	GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
+	UpdateEconomy(ctx context.Context, eco model.UserEconomy) error
 }

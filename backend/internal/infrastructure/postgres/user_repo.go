@@ -89,17 +89,51 @@ func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) e
 
 func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (model.User, error) {
 	var user model.User
+	user.ID = id
 
 	err := r.DB.QueryRow(
 		ctx,
-		`SELECT id, username, xp, level, terrace_level FROM users WHERE id=$1`,
+		`SELECT username, xp, level, terrace_level FROM users WHERE id=$1`,
 		id,
-	).Scan(&user.ID, &user.Username, &user.XP, &user.Level, &user.TerraceLevel)
+	).Scan(&user.Username, &user.XP, &user.Level, &user.TerraceLevel)
 
 	return user, err
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := r.DB.Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
+	return err
+}
+
+func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	var eco model.UserEconomy
+	eco.ID = id
+
+	query := `
+		SELECT penitence, grace, max_penitence, collector_pending_penitence, collector_reset_at
+		FROM user_economy
+		WHERE user_id=$1
+	`
+
+	err := r.DB.QueryRow(ctx, query, id).Scan(
+		&eco.Penitence,
+		&eco.Grace,
+		&eco.MaxPenitence,
+		&eco.CollectorPendingPenitence,
+		&eco.CollectorResetAt,
+	)
+
+	return eco, err
+}
+
+func (r *UserRepository) UpdateEconomy(ctx context.Context, eco model.UserEconomy) error {
+	query := `
+		UPDATE user_economy
+		SET penitence=$2, grace=$3, max_penitence=$4, collector_pending_penitence=$5, collector_reset_at=$6, updated_at=$6
+		WHERE user_id=$1
+	`
+
+	_, err := r.DB.Exec(ctx, query, eco.ID, eco.Penitence, eco.Grace, eco.MaxPenitence, eco.CollectorPendingPenitence, time.Now())
+
 	return err
 }
