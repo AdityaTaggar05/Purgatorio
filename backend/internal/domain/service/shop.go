@@ -1,0 +1,64 @@
+package service
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
+	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
+	"github.com/AdityaTaggar05/Purgatorio/pkg/purgerr"
+	"github.com/google/uuid"
+)
+
+type ShopService struct {
+	ShopRepo repository.ShopRepository
+	UserRepo repository.UserRepository
+}
+
+func NewShopService(shopRepo repository.ShopRepository, userRepo repository.UserRepository) *ShopService {
+	return &ShopService{ShopRepo: shopRepo, UserRepo: userRepo}
+}
+
+func (s *ShopService) GetShop(ctx context.Context, userID uuid.UUID) ([]model.ShopItem, error) {
+	user, err := s.UserRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	buildings, err := s.ShopRepo.GetAllBuildings(ctx)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to get shop buildings"), err)
+	}
+
+	counts, err := s.ShopRepo.GetUserBuildingCounts(ctx, userID)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to get building counts"), err)
+	}
+
+	limits, err := s.ShopRepo.GetLimitsByTerrace(ctx, user.TerraceLevel)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to get building limits"), err)
+	}
+
+	items := make([]model.ShopItem, 0, len(buildings))
+	for _, b := range buildings {
+		owned := counts[b.ID]
+		maxAllowed := limits[b.ID]
+
+		levels, err := s.ShopRepo.GetBuildingLevels(ctx, b.ID)
+		if err != nil {
+			return nil, purgerr.Wrap(fmt.Errorf("failed to get building levels"), err)
+		}
+
+		items = append(items, model.ShopItem{
+			Building:     b,
+			CurrentOwned: owned,
+			MaxAllowed:   maxAllowed,
+			CanBuy:       owned < maxAllowed,
+			Levels:       levels,
+		})
+	}
+
+	return items, nil
+}
+
