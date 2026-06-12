@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
@@ -223,4 +224,87 @@ func checkOverlap(placed []model.PlacedBuilding, sizes map[string]int, x, y, siz
 
 func overlap(x1, y1, s1, x2, y2, s2 int) bool {
 	return x1 < x2+s2 && x1+s1 > x2 && y1 < y2+s2 && y1+s1 > y2
+}
+
+func (s *BaseService) UpgradeBuilding(ctx context.Context, userID uuid.UUID, buildingID string, x, y int) error {
+	pb, err := s.BaseLayoutRepo.GetBuildingAtPosition(ctx, userID, x, y)
+	if err != nil {
+		return purgerr.Wrap(ErrBuildingNotPlaced, err)
+	}
+
+	if pb.BuildingID != buildingID {
+		return purgerr.Wrap(ErrBuildingNotPlaced, ErrBuildingNotPlaced)
+	}
+
+	if pb.Metadata != nil && pb.Metadata.UpgradeEndsAt != nil {
+		return purgerr.Wrap(ErrUpgradeAlreadyActive, ErrUpgradeAlreadyActive)
+	}
+
+	nextLevel := pb.Level + 1
+	nextStats, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, buildingID, nextLevel)
+	if err != nil {
+		return purgerr.Wrap(ErrMaxLevelReached, err)
+	}
+
+	eco, err := s.UserRepo.GetEconomy(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	if eco.Penitence < nextStats.UpgradeCost {
+		return purgerr.Wrap(ErrInsufficientResources, ErrInsufficientResources)
+	}
+
+	eco.Penitence -= nextStats.UpgradeCost
+
+	if err := s.UserRepo.UpdateEconomy(ctx, eco); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to deduct upgrade cost"), err)
+	}
+
+	upgradeEndsAt := time.Now().Add(time.Duration(nextStats.UpgradeTime) * time.Second)
+	if err := s.BaseLayoutRepo.StartUpgrade(ctx, userID, buildingID, x, y, upgradeEndsAt); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to start upgrade"), err)
+	}
+
+	return nil
+}
+
+func (s *BaseService) CheckIn(ctx context.Context, userID uuid.UUID) (*model.CheckInResult, error) {
+	ready, err := s.BaseLayoutRepo.GetReadyUpgrades(ctx, userID)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to get ready upgrades"), err)
+	}
+
+	result := &model.CheckInResult{
+		CompletedUpgrades: make([]model.CheckInUpgrade, 0, len(ready)),
+	}
+
+	for _, pb := range ready {
+		building, err := s.ShopRepo.GetBuildingByID(ctx, pb.BuildingID)
+		if err != nil {
+			continue
+		}
+
+		newLevel := pb.Level + 1
+
+		if building.Category == model.BuildingResource {
+			if err := s.BaseLayoutRepo.BumpLevel(ctx, userID, pb.BuildingID, pb.X, pb.Y, newLevel); err != nil {
+				continue
+			}
+		} else {
+			if err := s.BaseLayoutRepo.CompleteUpgrade(ctx, userID, pb.BuildingID, pb.X, pb.Y, newLevel); err != nil {
+				continue
+			}
+		}
+
+		result.CompletedUpgrades = append(result.CompletedUpgrades, model.CheckInUpgrade{
+			BuildingID: pb.BuildingID,
+			X:          pb.X,
+			Y:          pb.Y,
+			FromLevel:  pb.Level,
+			ToLevel:    newLevel,
+		})
+	}
+
+	return result, nil
 }

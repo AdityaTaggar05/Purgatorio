@@ -18,4 +18,6 @@ var (
 	ErrPositionOccupied          = errors.New("position already occupied")
 	ErrNotEnoughBuildingsInInventory = errors.New("not enough buildings in inventory")
 	ErrBuildingNotPlaced         = errors.New("building not placed at this position")
+	ErrUpgradeAlreadyActive      = errors.New("upgrade already in progress")
+	ErrMaxLevelReached           = errors.New("building already at max level")
 )

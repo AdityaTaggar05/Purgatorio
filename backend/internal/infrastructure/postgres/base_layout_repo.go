@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/google/uuid"
@@ -97,4 +98,60 @@ func (r *BaseLayoutRepository) GetBuildingLevelStats(ctx context.Context, buildi
 		return nil, err
 	}
 	return &l, nil
+}
+
+func (r *BaseLayoutRepository) StartUpgrade(ctx context.Context, userID uuid.UUID, buildingID string, x, y int, upgradeEndsAt time.Time) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE base_layouts
+		 SET metadata = jsonb_build_object('upgrade_ends_at', $5), updated_at = now()
+		 WHERE user_id = $1 AND building_id = $2 AND x = $3 AND y = $4`,
+		userID, buildingID, x, y, upgradeEndsAt,
+	)
+	return err
+}
+
+func (r *BaseLayoutRepository) GetReadyUpgrades(ctx context.Context, userID uuid.UUID) ([]model.PlacedBuilding, error) {
+	query := `
+		SELECT building_id, x, y, level, metadata
+		FROM base_layouts
+		WHERE user_id = $1
+		  AND metadata ? 'upgrade_ends_at'
+		  AND (metadata->>'upgrade_ends_at')::timestamptz <= now()`
+
+	rows, err := r.DB.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var buildings []model.PlacedBuilding
+	for rows.Next() {
+		var pb model.PlacedBuilding
+		pb.UserID = userID
+		if err := rows.Scan(&pb.BuildingID, &pb.X, &pb.Y, &pb.Level, &pb.Metadata); err != nil {
+			return nil, err
+		}
+		buildings = append(buildings, pb)
+	}
+	return buildings, rows.Err()
+}
+
+func (r *BaseLayoutRepository) CompleteUpgrade(ctx context.Context, userID uuid.UUID, buildingID string, x, y int, newLevel int) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE base_layouts
+		 SET level = $5, metadata = metadata - 'upgrade_ends_at', updated_at = now()
+		 WHERE user_id = $1 AND building_id = $2 AND x = $3 AND y = $4`,
+		userID, buildingID, x, y, newLevel,
+	)
+	return err
+}
+
+func (r *BaseLayoutRepository) BumpLevel(ctx context.Context, userID uuid.UUID, buildingID string, x, y int, newLevel int) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE base_layouts
+		 SET level = $5, updated_at = now()
+		 WHERE user_id = $1 AND building_id = $2 AND x = $3 AND y = $4`,
+		userID, buildingID, x, y, newLevel,
+	)
+	return err
 }

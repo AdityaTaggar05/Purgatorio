@@ -62,3 +62,15 @@ type BaseLayoutResponse struct {
 	GridW     int                      `json:"grid_w"`
 	GridH     int                      `json:"grid_h"`
 }
+
+type CheckInResult struct {
+	CompletedUpgrades []CheckInUpgrade `json:"completed_upgrades"`
+}
+
+type CheckInUpgrade struct {
+	BuildingID string `json:"building_id"`
+	X          int    `json:"x"`
+	Y          int    `json:"y"`
+	FromLevel  int    `json:"from_level"`
+	ToLevel    int    `json:"to_level"`
+}

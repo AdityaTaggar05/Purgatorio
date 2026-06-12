@@ -10,5 +10,8 @@ func (h *BaseHandler) Routes() chi.Router {
 	r.Delete("/layout", h.HandleRemoveBuilding)
 	r.Put("/layout", h.HandleMoveBuilding)
 
+	r.Post("/upgrade", h.HandleUpgradeBuilding)
+	r.Post("/check-in", h.HandleCheckIn)
+
 	return r
 }
