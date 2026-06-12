@@ -66,3 +66,19 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
 
 	return buildings, nil
 }
+
+func (r *BaseRepository) RemoveUpgradeInfo(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		UPDATE base_layouts
+		SET 
+			metadata = metadata - 'upgrade_ends_at'
+		WHERE
+				  metadata ? 'upgrade_ends_at'
+			AND (metadata->>'upgrade_ends_at')::timestamptz <= NOW()
+			AND user_id=$1
+	`
+
+	_, err := r.DB.Exec(ctx, query, userID)
+
+	return err
+}

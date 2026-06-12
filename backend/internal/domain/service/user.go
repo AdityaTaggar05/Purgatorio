@@ -75,7 +75,7 @@ func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.U
 	}
 
 	s.UserRepo.UpdateEconomy(ctx, eco)
-	//s.UserRepo.UpdateBuildingMetadata(ctx, info)
+	s.BaseRepo.RemoveUpgradeInfo(ctx, id)
 
 	return eco, nil
 }
