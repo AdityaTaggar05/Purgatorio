@@ -36,6 +36,14 @@ func (r *ShopRepository) GetAllBuildings(ctx context.Context) ([]model.Building,
 	return buildings, rows.Err()
 }
 
+func (r *ShopRepository) GetBuildingByID(ctx context.Context, id string) (model.Building, error) {
+	var b model.Building
+	err := r.DB.QueryRow(ctx,
+		`SELECT id, name, size, price, currency, category FROM buildings WHERE id = $1`, id,
+	).Scan(&b.ID, &b.Name, &b.Size, &b.Price, &b.Currency, &b.Category)
+	return b, err
+}
+
 func (r *ShopRepository) GetUserBuildingCounts(ctx context.Context, userID uuid.UUID) (map[string]int, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT building_id, quantity FROM user_buildings WHERE user_id = $1`, userID,
@@ -103,4 +111,37 @@ func (r *ShopRepository) GetBuildingLevels(ctx context.Context, buildingID strin
 		levels = append(levels, l)
 	}
 	return levels, rows.Err()
+}
+
+func (r *ShopRepository) PurchaseBuilding(ctx context.Context, userID uuid.UUID, buildingID string, price int, currency model.Currency) error {
+	tx, err := r.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	column := "penitence"
+	if currency == model.CurrencyGrace {
+		column = "grace"
+	}
+
+	_, err = tx.Exec(ctx,
+		`UPDATE user_economy SET `+column+` = `+column+` - $1, updated_at = now()
+		 WHERE user_id = $2`,
+		price, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO user_buildings (user_id, building_id, quantity) VALUES ($1, $2, 1)
+		 ON CONFLICT (user_id, building_id) DO UPDATE SET quantity = user_buildings.quantity + 1`,
+		userID, buildingID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

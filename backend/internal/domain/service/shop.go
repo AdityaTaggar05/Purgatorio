@@ -62,3 +62,51 @@ func (s *ShopService) GetShop(ctx context.Context, userID uuid.UUID) ([]model.Sh
 	return items, nil
 }
 
+func (s *ShopService) BuyBuilding(ctx context.Context, userID uuid.UUID, buildingID string) error {
+	building, err := s.ShopRepo.GetBuildingByID(ctx, buildingID)
+	if err != nil {
+		return purgerr.Wrap(ErrBuildingNotFound, err)
+	}
+
+	eco, err := s.UserRepo.GetEconomy(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	user, err := s.UserRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	counts, err := s.ShopRepo.GetUserBuildingCounts(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to get building counts"), err)
+	}
+
+	limits, err := s.ShopRepo.GetLimitsByTerrace(ctx, user.TerraceLevel)
+	if err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to get building limits"), err)
+	}
+
+	owned := counts[buildingID]
+	maxAllowed := limits[buildingID]
+
+	if owned >= maxAllowed {
+		return purgerr.Wrap(ErrBuildingLimitReached, ErrBuildingLimitReached)
+	}
+
+	balance := eco.Penitence
+	if building.Currency == model.CurrencyGrace {
+		balance = eco.Grace
+	}
+
+	if balance < building.Price {
+		return purgerr.Wrap(ErrInsufficientResources, ErrInsufficientResources)
+	}
+
+	if err := s.ShopRepo.PurchaseBuilding(ctx, userID, buildingID, building.Price, building.Currency); err != nil {
+		return purgerr.Wrap(fmt.Errorf("purchase failed"), err)
+	}
+
+	return nil
+}
