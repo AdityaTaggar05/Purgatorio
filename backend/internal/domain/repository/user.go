@@ -23,4 +23,7 @@ type UserRepository interface {
 	// Economy Functions
 	GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
 	UpdateEconomy(ctx context.Context, eco model.UserEconomy) error
+
+	// Progression
+	UpdateTerraceLevel(ctx context.Context, id uuid.UUID, level int) error
 }

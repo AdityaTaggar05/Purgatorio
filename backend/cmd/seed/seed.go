@@ -63,6 +63,7 @@ func main() {
 		{"bastion", "Bastion", 1, 50, "penitence", "defense"},
 		{"angel-spire", "Angel Spire", 2, 500, "penitence", "defense"},
 		{"lament-basin", "Lament Basin", 2, 300, "penitence", "resource"},
+		{"sanctum", "Sanctum", 3, 10000, "penitence", "other"},
 	}
 
 	for _, b := range buildings {
@@ -100,6 +101,11 @@ func main() {
 		{"lament-basin", 1, 1},
 		{"lament-basin", 2, 2},
 		{"lament-basin", 3, 3},
+
+		// Sanctum: terrace progression — one per terrace level
+		{"sanctum", 1, 1},
+		{"sanctum", 2, 1},
+		{"sanctum", 3, 1},
 	}
 
 	for _, l := range limits {
@@ -133,10 +139,10 @@ func main() {
 
 	levels := []levelDef{
 		// Bastion (wall): only HP scales, no damage/production/storage/range
-		{"bastion", 1, intp(300), nil, nil, nil, nil, 50, 60},
-		{"bastion", 2, intp(500), nil, nil, nil, nil, 150, 300},
-		{"bastion", 3, intp(800), nil, nil, nil, nil, 400, 900},
-		{"bastion", 4, intp(1200), nil, nil, nil, nil, 900, 1800},
+		{"bastion", 1, intp(300), nil, nil, nil, floatp(0), 50, 60},
+		{"bastion", 2, intp(500), nil, nil, nil, floatp(0), 150, 300},
+		{"bastion", 3, intp(800), nil, nil, nil, floatp(0), 400, 900},
+		{"bastion", 4, intp(1200), nil, nil, nil, floatp(0), 900, 1800},
 
 		// Angel Spire: ranged defense attack_range 5.0
 		{"angel-spire", 1, intp(450), intp(12), nil, nil, floatp(5.0), 500, 600},
@@ -146,11 +152,18 @@ func main() {
 		{"angel-spire", 5, intp(1400), intp(50), nil, nil, floatp(5.0), 9000, 14400},
 
 		// Lament Basin: resource collector, production_rate in penitence/sec (int), no attack range
-		{"lament-basin", 1, intp(400), nil, intp(2), intp(500), nil, 300, 600},
-		{"lament-basin", 2, intp(550), nil, intp(4), intp(1000), nil, 800, 1800},
-		{"lament-basin", 3, intp(700), nil, intp(6), intp(1800), nil, 2000, 3600},
-		{"lament-basin", 4, intp(900), nil, intp(8), intp(3000), nil, 4500, 7200},
-		{"lament-basin", 5, intp(1150), nil, intp(12), intp(5000), nil, 9000, 14400},
+		{"lament-basin", 1, intp(400), nil, intp(2), intp(500), floatp(0), 300, 600},
+		{"lament-basin", 2, intp(550), nil, intp(4), intp(1000), floatp(0), 800, 1800},
+		{"lament-basin", 3, intp(700), nil, intp(6), intp(1800), floatp(0), 2000, 3600},
+		{"lament-basin", 4, intp(900), nil, intp(8), intp(3000), floatp(0), 4500, 7200},
+		{"lament-basin", 5, intp(1150), nil, intp(12), intp(5000), floatp(0), 9000, 14400},
+
+		// Sanctum: terrace progression — minimal HP, no combat/production stats
+		{"sanctum", 1, intp(500), nil, nil, nil, floatp(0), 5000, 3600},
+		{"sanctum", 2, intp(600), nil, nil, nil, floatp(0), 12000, 7200},
+		{"sanctum", 3, intp(700), nil, nil, nil, floatp(0), 25000, 14400},
+		{"sanctum", 4, intp(800), nil, nil, nil, floatp(0), 50000, 28800},
+		{"sanctum", 5, intp(900), nil, nil, nil, floatp(0), 100000, 57600},
 	}
 
 	for _, lv := range levels {
@@ -364,7 +377,7 @@ func main() {
 		// user_buildings counts
 		_, err = tx.Exec(ctx, `
 			INSERT INTO user_buildings (user_id, building_id, quantity)
-			VALUES ($1, 'lament-basin', 1), ($1, 'angel-spire', 1), ($1, 'bastion', $2)
+			VALUES ($1, 'lament-basin', 1), ($1, 'angel-spire', 1), ($1, 'bastion', $2), ($1, 'sanctum', 1)
 		`, authID, numBastions)
 		if err != nil {
 			log.Fatalf("insert user_buildings %s: %v", u.username, err)
@@ -372,10 +385,12 @@ func main() {
 
 		// base_layouts on a 30x30 grid
 		// Place lament-basin near top-left (resource), angel-spire near center (defense core)
+		// Sanctum (3x3) in the top-right corner
 		// Bastions form a perimeter ring around the angel-spire.
 
 		basinX, basinY := 4, 4
 		spireX, spireY := 14, 14
+		sanctumX, sanctumY := 24, 5
 
 		_, err = tx.Exec(ctx, `
 			INSERT INTO base_layouts (user_id, building_id, x, y, metadata)
@@ -391,6 +406,14 @@ func main() {
 		`, authID, spireX, spireY)
 		if err != nil {
 			log.Fatalf("insert base_layout angel-spire %s: %v", u.username, err)
+		}
+
+		_, err = tx.Exec(ctx, `
+			INSERT INTO base_layouts (user_id, building_id, x, y, metadata)
+			VALUES ($1, 'sanctum', $2, $3, '{}'::jsonb)
+		`, authID, sanctumX, sanctumY)
+		if err != nil {
+			log.Fatalf("insert base_layout sanctum %s: %v", u.username, err)
 		}
 
 		// Bastion ring around the angel-spire (which occupies spireX..spireX+1, spireY..spireY+1)
