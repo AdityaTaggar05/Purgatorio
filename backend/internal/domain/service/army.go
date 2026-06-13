@@ -32,3 +32,20 @@ func (s *ArmyService) GetTroops(ctx context.Context) ([]model.Troop, error) {
 	return troops, nil
 }
 
+func (s *ArmyService) GetMyTroops(ctx context.Context, userID uuid.UUID) (*model.MyTroopsResponse, error) {
+	userArmy, err := s.ArmyRepo.GetUserArmy(ctx, userID)
+	if err != nil {
+		return &model.MyTroopsResponse{
+			Troops:       map[string]int{},
+			UsedCapacity: 0,
+			MaxCapacity:  s.getMaxCapacity(ctx, userID),
+		}, nil
+	}
+
+	return &model.MyTroopsResponse{
+		Troops:       userArmy.Troops,
+		UsedCapacity: userArmy.UsedCapacity,
+		MaxCapacity:  s.getMaxCapacity(ctx, userID),
+	}, nil
+}
+
