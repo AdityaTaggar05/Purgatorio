@@ -8,6 +8,7 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/army"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/auth"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/base"
+	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/battle"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/middleware"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/shop"
 	"github.com/AdityaTaggar05/Purgatorio/internal/api/https/user"
@@ -16,7 +17,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(logger *slog.Logger, publicKey *rsa.PublicKey, authHandler *auth.AuthHandler, userHandler *user.UserHandler, shopHandler *shop.ShopHandler, baseHandler *base.BaseHandler, armyHandler *army.ArmyHandler) *chi.Mux {
+func NewRouter(logger *slog.Logger, publicKey *rsa.PublicKey, authHandler *auth.AuthHandler, userHandler *user.UserHandler, shopHandler *shop.ShopHandler, baseHandler *base.BaseHandler, armyHandler *army.ArmyHandler, battleHandler *battle.BattleHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestLogger(logger))
@@ -56,6 +57,7 @@ func NewRouter(logger *slog.Logger, publicKey *rsa.PublicKey, authHandler *auth.
 	protected.Mount("/shop", shopHandler.Routes())
 	protected.Mount("/base", baseHandler.Routes())
 	protected.Mount("/army", armyHandler.Routes())
+	protected.Mount("/battle", battleHandler.Routes())
 
 	r.Mount("/", protected)
 
