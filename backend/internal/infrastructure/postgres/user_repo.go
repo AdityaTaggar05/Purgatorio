@@ -129,11 +129,19 @@ func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.Us
 func (r *UserRepository) UpdateEconomy(ctx context.Context, eco model.UserEconomy) error {
 	query := `
 		UPDATE user_economy
-		SET penitence=$2, grace=$3, max_penitence=$4, collector_pending_penitence=$5, collector_reset_at=$6, updated_at=$6
+		SET penitence=$2, grace=$3, max_penitence=$4, collector_pending_penitence=$5, collector_reset_at=$6, updated_at=now()
 		WHERE user_id=$1
 	`
 
-	_, err := r.DB.Exec(ctx, query, eco.ID, eco.Penitence, eco.Grace, eco.MaxPenitence, eco.CollectorPendingPenitence, time.Now())
+	_, err := r.DB.Exec(ctx, query, eco.ID, eco.Penitence, eco.Grace, eco.MaxPenitence, eco.CollectorPendingPenitence, eco.CollectorResetAt)
 
+	return err
+}
+
+func (r *UserRepository) UpdateTerraceLevel(ctx context.Context, id uuid.UUID, level int) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE users SET terrace_level = $2, updated_at = now() WHERE id = $1`,
+		id, level,
+	)
 	return err
 }

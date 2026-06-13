@@ -304,6 +304,16 @@ func (s *BaseService) CheckIn(ctx context.Context, userID uuid.UUID) (*model.Che
 			FromLevel:  pb.Level,
 			ToLevel:    newLevel,
 		})
+
+		if pb.BuildingID == "sanctum" {
+			user, err := s.UserRepo.GetUserByID(ctx, userID)
+			if err != nil {
+				continue
+			}
+			if err := s.UserRepo.UpdateTerraceLevel(ctx, userID, user.TerraceLevel+1); err != nil {
+				continue
+			}
+		}
 	}
 
 	return result, nil
