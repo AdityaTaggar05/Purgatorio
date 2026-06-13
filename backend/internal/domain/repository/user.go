@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	// Auth Functions
 	CreateUser(ctx context.Context, email string, hash string, username string) (model.User, error)
+	InitializeNewUser(ctx context.Context, userID uuid.UUID) error
 	CreateRefreshToken(ctx context.Context, userID uuid.UUID, token string, ttl time.Time) error
 	GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error)
 	GetRefreshToken(ctx context.Context, token string) (model.RefreshToken, error)

@@ -39,6 +39,114 @@ func (r *UserRepository) CreateUser(ctx context.Context, email, hash, username s
 	return user, err
 }
 
+func (r *UserRepository) InitializeNewUser(ctx context.Context, userID uuid.UUID) error {
+	buildings := []struct {
+		id  string
+		qty int
+	}{
+		{"bastion", 6},
+		{"angel-spire", 1},
+		{"lament-basin", 1},
+		{"sanctum", 1},
+		{"barracks", 1},
+	}
+
+	placements := []struct {
+		buildingID string
+		x          int
+		y          int
+	}{
+		{"lament-basin", 4, 4},
+		{"angel-spire", 14, 14},
+		{"sanctum", 24, 5},
+		{"barracks", 0, 20},
+	}
+
+	tx, err := r.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO user_economy (user_id, penitence, grace, max_penitence) VALUES ($1, 500, 50, 5000)`,
+		userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `INSERT INTO user_stats (user_id) VALUES ($1)`, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO user_combat (user_id, sin_meter) VALUES ($1, 0)`, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO game_state (user_id, scene_id, fallback) VALUES ($1, 'base', 'base')`, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, b := range buildings {
+		_, err = tx.Exec(ctx,
+			`INSERT INTO user_buildings (user_id, building_id, quantity) VALUES ($1, $2, $3)`,
+			userID, b.id, b.qty,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, p := range placements {
+		_, err = tx.Exec(ctx,
+			`INSERT INTO base_layouts (user_id, building_id, x, y, metadata) VALUES ($1, $2, $3, $4, '{}'::jsonb)`,
+			userID, p.buildingID, p.x, p.y,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	bastionPlacements := [][2]int{
+		{13, 13}, {14, 13}, {15, 13}, {16, 13},
+		{16, 14}, {16, 15}, {16, 16},
+		{15, 16}, {14, 16}, {13, 16},
+		{13, 15}, {13, 14},
+	}
+	for i, cell := range bastionPlacements {
+		if i >= 6 {
+			break
+		}
+		if cell[0] < 0 || cell[1] < 0 || cell[0] > 29 || cell[1] > 29 {
+			continue
+		}
+		_, err = tx.Exec(ctx,
+			`INSERT INTO base_layouts (user_id, building_id, x, y, metadata) VALUES ($1, 'bastion', $2, $3, '{}'::jsonb)`,
+			userID, cell[0], cell[1],
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO user_army (user_id) VALUES ($1)`, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string) (model.AuthAndUser, error) {
 	var user model.AuthAndUser
 

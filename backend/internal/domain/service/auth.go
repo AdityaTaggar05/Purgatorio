@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/config"
@@ -39,6 +40,10 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 	user, err = s.UserRepo.CreateUser(ctx, email, string(hash), username)
 	if err != nil {
 		return user, tokens, purgerr.Wrap(ErrUserAlreadyExists, err)
+	}
+
+	if err := s.UserRepo.InitializeNewUser(ctx, user.ID); err != nil {
+		return user, tokens, purgerr.Wrap(fmt.Errorf("failed to initialize new user"), err)
 	}
 
 	tokens.AccessToken, err = model.GenerateJWT(user.ID, s.SigningKey, s.Config.AccessTTL)
