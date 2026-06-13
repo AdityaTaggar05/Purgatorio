@@ -1,0 +1,50 @@
+name: purgatorio
+services:
+  purg-backend:
+    container_name: purg-backend
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DB_URL: "postgres://purg_user:${PURG_DB_PASS}@purg-postgres:5432/purg_db?sslmode=disable"
+      JWT_PUBLIC_KEY_PATH: /keys/jwt_public.pem
+      JWT_PRIVATE_KEY_PATH: /keys/jwt_private.pem 
+    volumes:
+      - ./backend/keys:/keys:ro
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+      purg-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db-migrate:
+    image: migrate/migrate:v4.19.0
+    volumes:
+      - ./backend/migrations:/purg-migrations
+    command:
+      [ "-source=file:///purg-migrations", "-database=postgres://purg_user:${PURG_DB_PASS}@purg-postgres:5432/purg_db?sslmode=disable", "up" ]
+    depends_on:
+      purg-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  purg-postgres:
+    image: postgres:16
+    container_name: purg-postgres
+    environment:
+      POSTGRES_DB: purg_db
+      POSTGRES_USER: purg_user
+      POSTGRES_PASSWORD: ${PURG_DB_PASS}
+    volumes:
+      - purg_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "purg_user", "-d", "purg_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  purg_postgres_data:
