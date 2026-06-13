@@ -103,7 +103,7 @@ func (r *BaseLayoutRepository) GetBuildingLevelStats(ctx context.Context, buildi
 func (r *BaseLayoutRepository) StartUpgrade(ctx context.Context, userID uuid.UUID, buildingID string, x, y int, upgradeEndsAt time.Time) error {
 	_, err := r.DB.Exec(ctx,
 		`UPDATE base_layouts
-		 SET metadata = jsonb_build_object('upgrade_ends_at', $5), updated_at = now()
+		 SET metadata = jsonb_build_object('upgrade_ends_at', $5::timestamptz), updated_at = now()
 		 WHERE user_id = $1 AND building_id = $2 AND x = $3 AND y = $4`,
 		userID, buildingID, x, y, upgradeEndsAt,
 	)
