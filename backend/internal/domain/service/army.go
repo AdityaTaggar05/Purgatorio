@@ -49,3 +49,63 @@ func (s *ArmyService) GetMyTroops(ctx context.Context, userID uuid.UUID) (*model
 	}, nil
 }
 
+func (s *ArmyService) getMaxCapacity(ctx context.Context, userID uuid.UUID) int {
+	maxCapacity := 0
+	placed, err := s.BaseLayoutRepo.GetLayout(ctx, userID)
+	if err != nil {
+		return 0
+	}
+	for _, pb := range placed {
+		if pb.BuildingID == "barracks" {
+			stats, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, pb.BuildingID, pb.Level)
+			if err == nil && stats.StorageCapacity != nil {
+				maxCapacity += *stats.StorageCapacity
+			}
+		}
+	}
+	return maxCapacity
+}
+
+func (s *ArmyService) TrainTroops(ctx context.Context, userID uuid.UUID, troopID string, count int) error {
+	if count <= 0 {
+		return purgerr.Wrap(fmt.Errorf("count must be positive"), fmt.Errorf("count must be positive"))
+	}
+
+	troop, err := s.ArmyRepo.GetTroopByID(ctx, troopID)
+	if err != nil {
+		return purgerr.Wrap(ErrTroopNotFound, err)
+	}
+
+	userArmy, err := s.ArmyRepo.GetUserArmy(ctx, userID)
+	if err != nil {
+		userArmy = &model.UserArmy{UserID: userID, Troops: map[string]int{}, UsedCapacity: 0}
+	}
+
+	maxCapacity := s.getMaxCapacity(ctx, userID)
+
+	newUsed := userArmy.UsedCapacity + count*troop.Space
+	if newUsed > maxCapacity {
+		return purgerr.Wrap(ErrInsufficientArmyCapacity, ErrInsufficientArmyCapacity)
+	}
+
+	eco, err := s.UserRepo.GetEconomy(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	totalCost := troop.TrainingCost * count
+	if eco.Penitence < totalCost {
+		return purgerr.Wrap(ErrInsufficientResources, ErrInsufficientResources)
+	}
+
+	eco.Penitence -= totalCost
+	if err := s.UserRepo.UpdateEconomy(ctx, eco); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to deduct training cost"), err)
+	}
+
+	if err := s.ArmyRepo.AddTroops(ctx, userID, troopID, count, newUsed); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to add troops"), err)
+	}
+
+	return nil
+}

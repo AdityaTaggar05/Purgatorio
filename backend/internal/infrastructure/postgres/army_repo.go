@@ -74,3 +74,16 @@ func (r *ArmyRepository) GetUserArmy(ctx context.Context, userID uuid.UUID) (*mo
 	}, nil
 }
 
+func (r *ArmyRepository) AddTroops(ctx context.Context, userID uuid.UUID, troopID string, count, usedCapacity int) error {
+	_, err := r.DB.Exec(ctx,
+		`INSERT INTO user_army (user_id, troops, used_capacity)
+		 VALUES ($1, jsonb_build_object($2::text, $3::int), $4)
+		 ON CONFLICT (user_id) DO UPDATE
+		 SET troops = jsonb_set(user_army.troops, ARRAY[$2],
+		     to_jsonb(COALESCE((user_army.troops->>$2)::int, 0) + $3)),
+		     used_capacity = $4,
+		     updated_at = now()`,
+		userID, troopID, count, usedCapacity,
+	)
+	return err
+}
