@@ -64,6 +64,7 @@ func main() {
 		{"angel-spire", "Angel Spire", 2, 500, "penitence", "defense"},
 		{"lament-basin", "Lament Basin", 2, 300, "penitence", "resource"},
 		{"sanctum", "Sanctum", 3, 10000, "penitence", "other"},
+		{"barracks", "Barracks", 3, 500, "penitence", "army"},
 	}
 
 	for _, b := range buildings {
@@ -106,6 +107,11 @@ func main() {
 		{"sanctum", 1, 1},
 		{"sanctum", 2, 1},
 		{"sanctum", 3, 1},
+
+		// Barracks: army capacity — one per terrace level
+		{"barracks", 1, 1},
+		{"barracks", 2, 1},
+		{"barracks", 3, 1},
 	}
 
 	for _, l := range limits {
@@ -164,6 +170,11 @@ func main() {
 		{"sanctum", 3, intp(700), nil, nil, nil, floatp(0), 25000, 14400},
 		{"sanctum", 4, intp(800), nil, nil, nil, floatp(0), 50000, 28800},
 		{"sanctum", 5, intp(900), nil, nil, nil, floatp(0), 100000, 57600},
+
+		// Barracks: army capacity via storage_capacity
+		{"barracks", 1, intp(400), nil, nil, intp(50), floatp(0), 500, 600},
+		{"barracks", 2, intp(550), nil, nil, intp(100), floatp(0), 1500, 1800},
+		{"barracks", 3, intp(700), nil, nil, intp(200), floatp(0), 4000, 3600},
 	}
 
 	for _, lv := range levels {
@@ -227,7 +238,6 @@ func main() {
 		maxPenitence int
 		sinMeter     int
 		troops       map[string]int
-		maxCapacity  int
 	}
 
 	users := []userDef{
@@ -246,7 +256,6 @@ func main() {
 				"ashwalker":    6,
 				"coveter":      8,
 			},
-			maxCapacity: 100,
 		},
 		{
 			email:        "beatrice@purgatorio.com",
@@ -259,10 +268,9 @@ func main() {
 			maxPenitence: 6000,
 			sinMeter:     0,
 			troops: map[string]int{
-				"hoarder":  3,
+				"hoarder":    3,
 				"ashwalker": 2,
 			},
-			maxCapacity: 50,
 		},
 		{
 			email:        "dante@purgatorio.com",
@@ -277,7 +285,6 @@ func main() {
 			troops: map[string]int{
 				"stone-bearer": 1,
 			},
-			maxCapacity: 20,
 		},
 	}
 
@@ -357,9 +364,9 @@ func main() {
 		troopsJSON.WriteString("}")
 
 		_, err = tx.Exec(ctx, `
-			INSERT INTO user_army (user_id, troops, used_capacity, max_capacity)
-			VALUES ($1, $2::jsonb, $3, $4)
-		`, authID, troopsJSON.String(), usedCapacity, u.maxCapacity)
+			INSERT INTO user_army (user_id, troops, used_capacity)
+			VALUES ($1, $2::jsonb, $3)
+		`, authID, troopsJSON.String(), usedCapacity)
 		if err != nil {
 			log.Fatalf("insert user_army %s: %v", u.username, err)
 		}
@@ -377,7 +384,7 @@ func main() {
 		// user_buildings counts
 		_, err = tx.Exec(ctx, `
 			INSERT INTO user_buildings (user_id, building_id, quantity)
-			VALUES ($1, 'lament-basin', 1), ($1, 'angel-spire', 1), ($1, 'bastion', $2), ($1, 'sanctum', 1)
+			VALUES ($1, 'lament-basin', 1), ($1, 'angel-spire', 1), ($1, 'bastion', $2), ($1, 'sanctum', 1), ($1, 'barracks', 1)
 		`, authID, numBastions)
 		if err != nil {
 			log.Fatalf("insert user_buildings %s: %v", u.username, err)
@@ -391,6 +398,7 @@ func main() {
 		basinX, basinY := 4, 4
 		spireX, spireY := 14, 14
 		sanctumX, sanctumY := 24, 5
+		barracksX, barracksY := 0, 20
 
 		_, err = tx.Exec(ctx, `
 			INSERT INTO base_layouts (user_id, building_id, x, y, metadata)
@@ -414,6 +422,14 @@ func main() {
 		`, authID, sanctumX, sanctumY)
 		if err != nil {
 			log.Fatalf("insert base_layout sanctum %s: %v", u.username, err)
+		}
+
+		_, err = tx.Exec(ctx, `
+			INSERT INTO base_layouts (user_id, building_id, x, y, metadata)
+			VALUES ($1, 'barracks', $2, $3, '{}'::jsonb)
+		`, authID, barracksX, barracksY)
+		if err != nil {
+			log.Fatalf("insert base_layout barracks %s: %v", u.username, err)
 		}
 
 		// Bastion ring around the angel-spire (which occupies spireX..spireX+1, spireY..spireY+1)

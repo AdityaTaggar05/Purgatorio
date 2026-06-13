@@ -20,4 +20,7 @@ var (
 	ErrBuildingNotPlaced         = errors.New("building not placed at this position")
 	ErrUpgradeAlreadyActive      = errors.New("upgrade already in progress")
 	ErrMaxLevelReached           = errors.New("building already at max level")
+
+	ErrTroopNotFound             = errors.New("troop not found")
+	ErrInsufficientArmyCapacity  = errors.New("insufficient army capacity")
 )
