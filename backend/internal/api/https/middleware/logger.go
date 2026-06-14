@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 
@@ -43,6 +45,13 @@ func (w *customResponseWriter) Write(p []byte) (int, error) {
 func (w *customResponseWriter) WriteHeader(status int) {
 	w.statusCode = status
 	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *customResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
 
 func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {

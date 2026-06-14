@@ -5,6 +5,9 @@ ALTER TABLE battles ALTER COLUMN outcome SET DEFAULT 'pending';
 ALTER TABLE battles ADD CONSTRAINT battles_outcome_check CHECK (outcome IN ('victory', 'defeat', 'threshold_failed', 'pending'));
 
 ALTER TABLE battles ALTER COLUMN destruction TYPE FLOAT USING destruction::FLOAT;
+ALTER TABLE battles ALTER COLUMN destruction SET DEFAULT 0;
+ALTER TABLE battles ALTER COLUMN loot SET DEFAULT 0;
+ALTER TABLE battles ALTER COLUMN duration SET DEFAULT 0;
 ALTER TABLE battles ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
 ALTER TABLE battles ALTER COLUMN base_snapshot_id DROP NOT NULL;
 

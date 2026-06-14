@@ -23,4 +23,13 @@ var (
 
 	ErrTroopNotFound             = errors.New("troop not found")
 	ErrInsufficientArmyCapacity  = errors.New("insufficient army capacity")
+
+	ErrCannotAttackSelf       = errors.New("cannot attack yourself")
+	ErrDefenderNotFound       = errors.New("defender not found")
+	ErrTerraceLevelMismatch   = errors.New("defender terrace level does not match")
+	ErrDefenderShieldActive   = errors.New("defender has an active shield")
+	ErrBattleNotFound         = errors.New("battle not found")
+	ErrBattleNotPending       = errors.New("battle is not in pending state")
+	ErrInvalidDeployment      = errors.New("invalid troop deployment")
+	ErrInsufficientArmyTroops = errors.New("insufficient troops in army for deployment")
 )
