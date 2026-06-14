@@ -1,64 +1,57 @@
-import type { BaseLayout } from "../../../types/building";
+import Phaser from "phaser";
+import { latestLayout } from "../GameCanvas";
 import { CameraManager } from "../managers/CameraManager";
+import { IsoMath } from "../managers/IsoMath";
 import { LayoutEngine } from "../managers/LayoutEngine";
 import { TerrainEngine } from "../managers/TerrainEngine";
-import Phaser from "phaser";
 
 export class TerraceScene extends Phaser.Scene {
   private terrain!: TerrainEngine;
   private layoutEngine!: LayoutEngine;
   private cameraManager!: CameraManager;
+  private initialized = false;
 
   preload() {
-    this.load.image('ground-tile', '/assets/ground-tile.png')
-    this.load.image('ground-tile-edge', '/assets/ground-tile-edge.png')
+    this.load.image('ground-tile', '/assets/ground-tile.png');
+    this.load.image('ground-tile-edge', '/assets/ground-tile-edge.png');
 
     this.load.image('building_bastion', '/assets/bastion.png');
     this.load.image('building_angel-spire', '/assets/angel-spire.png');
     this.load.image('building_lament-basin', '/assets/lament-basin.png');
+    this.load.image('building_barracks', '/assets/barracks.png');
+    this.load.image('building_sanctum', '/assets/sanctum.png');
   }
 
   create() {
     this.cameraManager = new CameraManager(this);
     this.terrain = new TerrainEngine(this);
     this.layoutEngine = new LayoutEngine(this);
+    this.initialized = true;
+    this.tryRender();
+  }
 
-    const baseLayoutJSON = `
-    {
-      "user_id": "user_penitent_777",
-      "tiles": 10,
-      "subgrid_factor": 3,
-      "buildings": [
-        {
-          "id": "bastion_001",
-          "x": 0,
-          "y": 0,
-          "size": 1
-        },
-        {
-          "id": "angel-spire_001",
-          "x": 4,
-          "y": 12,
-          "size": 2
-        },
-        {
-          "id": "lament-basin_001",
-          "x": 4,
-          "y": 4,
-          "size": 2
-        }
-      ]
+  update() {
+    if (this.initialized && latestLayout) {
+      this.tryRender();
     }
-    `
+  }
 
-    const baseLayout: BaseLayout = JSON.parse(baseLayoutJSON)
+  private lastLayoutKey = "";
 
-    console.log(baseLayout)
+  private tryRender() {
+    if (!latestLayout) return;
+    const key = JSON.stringify(latestLayout);
+    if (key === this.lastLayoutKey) return;
+    this.lastLayoutKey = key;
 
-    this.cameraManager.centerOnMap(baseLayout.tiles)
-    this.cameraManager.setBoundsFromMap(baseLayout.tiles)
+    const tilesW = IsoMath.gridToTiles(latestLayout.grid_w);
+    const tilesH = IsoMath.gridToTiles(latestLayout.grid_h);
 
-    this.terrain.generateGroundGrid(baseLayout.tiles)
-    this.layoutEngine.renderLayout(baseLayout);
+    this.cameraManager.setMapSize(tilesW, tilesH);
+    this.cameraManager.centerOnMap();
+
+    this.terrain.destroyMap();
+    this.terrain.generateGroundGrid(tilesW, tilesH);
+    this.layoutEngine.renderLayout(latestLayout);
   }
 }
