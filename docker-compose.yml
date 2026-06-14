@@ -15,6 +15,8 @@ services:
     depends_on:
       db-migrate:
         condition: service_completed_successfully
+      db-seed:
+        condition: service_completed_successfully
       purg-postgres:
         condition: service_healthy
     restart: unless-stopped
@@ -28,6 +30,17 @@ services:
     depends_on:
       purg-postgres:
         condition: service_healthy
+    restart: "no"
+
+  db-seed:
+    container_name: db-seed
+    build: ./backend
+    command: ["./purg-seed"]
+    environment:
+      DB_URL: "postgres://purg_user:${PURG_DB_PASS}@purg-postgres:5432/purg_db?sslmode=disable"
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
     restart: "no"
 
   purg-postgres:

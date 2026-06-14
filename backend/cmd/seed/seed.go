@@ -41,6 +41,13 @@ func main() {
 
 	ctx := context.Background()
 
+	var count int
+	_ = pool.QueryRow(ctx, `SELECT COUNT(*) FROM auth WHERE email IN ('virgil@purgatorio.com', 'beatrice@purgatorio.com', 'dante@purgatorio.com')`).Scan(&count)
+	if count >= 3 {
+		fmt.Println("Seed users already exist, skipping.")
+		return
+	}
+
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		log.Fatalf("begin tx: %v", err)
