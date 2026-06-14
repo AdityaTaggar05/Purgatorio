@@ -1,15 +1,11 @@
-import { useState } from 'react';
 import GameCanvas from '../../game/phaser/GameCanvas';
 import { useAuth } from '../../hooks/useAuth';
+import { useGame } from '../../hooks/useGame';
 import GameHud from '../../ui/layout/GameHud';
 
 export default function GameDashboard() {
   const { user, logout } = useAuth();
-
-  // Mock variables to be finally fetched from the backend
-  const [penitence, setPenitence] = useState({ current: 420, max: 1000, label: 'Penitence' });
-  const [grace, setGrace] = useState({ current: 85, max: 120, label: 'Grace' });
-  const [sinMeter, setSinMeter] = useState(68);
+  const { state } = useGame();
 
   const handleAscension = () => console.log('Opening Altar Store Interface...');
   const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
@@ -17,15 +13,13 @@ export default function GameDashboard() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#111111]">
-
-      <GameCanvas />
+      <GameCanvas layout={state.layout} />
 
       <GameHud
         username={user?.username || "Unknown Penitent"}
         level={user?.level || 1}
-        penitence={penitence}
-        grace={grace}
-        sinMeter={sinMeter}
+        economy={state.economy}
+        sinMeter={state.sinMeter}
         onAscensionClick={handleAscension}
         onLogoutClick={logout}
         onAttackClick={handleAttack}
