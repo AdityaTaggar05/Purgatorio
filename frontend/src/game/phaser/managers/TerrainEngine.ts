@@ -26,7 +26,7 @@ export class TerrainEngine {
           y: screenPos.y,
           gridX: x,
           gridY: y,
-          edge: x === tilesW - 1 || y === tilesH - 1 || x === 0 || y === 0,
+          edge: x === tilesW - 1 || y === tilesH - 1,
         });
       }
     }
