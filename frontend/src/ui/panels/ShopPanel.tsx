@@ -49,18 +49,19 @@ export default function ShopPanel({ open, onClose }: ShopPanelProps) {
     }
   };
 
-  if (!open) return null;
-
   const penitence = state.economy?.penitence ?? 0;
   const grace = state.economy?.grace ?? 0;
 
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none">
+    <div className={`absolute inset-0 z-30 transition-all duration-300 ${open ? "pointer-events-auto" : "pointer-events-none"}`}>
       {/* Backdrop */}
-      <div className="absolute inset-0 pointer-events-auto" onClick={onClose} />
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        onClick={onClose}
+      />
 
       {/* Panel */}
-      <div className="absolute top-0 right-0 h-full w-96 bg-purgatory-card border-l border-purgatory-border shadow-2xl pointer-events-auto overflow-y-auto">
+      <div className={`absolute top-0 right-0 h-full w-96 bg-purgatory-card border-l border-purgatory-border shadow-2xl overflow-y-auto transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-serif text-xl font-bold tracking-wider text-gray-200">
