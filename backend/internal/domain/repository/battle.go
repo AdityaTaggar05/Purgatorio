@@ -10,7 +10,7 @@ import (
 )
 
 type BattleRepository interface {
-	GetMatchList(ctx context.Context, terraceLevel int, excludeUserID uuid.UUID) ([]model.MatchListEntry, error)
+	GetMatchList(ctx context.Context, terraceLevel int, excludeUserID uuid.UUID) ([]model.MatchPlayer, error)
 
 	CreateBattle(ctx context.Context, battle model.Battle) (uuid.UUID, error)
 	GetBattle(ctx context.Context, battleID uuid.UUID) (model.Battle, error)

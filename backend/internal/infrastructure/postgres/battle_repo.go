@@ -19,7 +19,7 @@ func NewBattleRepository(db *pgxpool.Pool) *BattleRepository {
 	return &BattleRepository{DB: db}
 }
 
-func (r *BattleRepository) GetMatchList(ctx context.Context, terraceLevel int, excludeUserID uuid.UUID) ([]model.MatchListEntry, error) {
+func (r *BattleRepository) GetMatchList(ctx context.Context, terraceLevel int, excludeUserID uuid.UUID) ([]model.MatchPlayer, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, username, terrace_level FROM users
 		 WHERE terrace_level = $1 AND id != $2
@@ -31,9 +31,9 @@ func (r *BattleRepository) GetMatchList(ctx context.Context, terraceLevel int, e
 	}
 	defer rows.Close()
 
-	var entries []model.MatchListEntry
+	var entries []model.MatchPlayer
 	for rows.Next() {
-		var e model.MatchListEntry
+		var e model.MatchPlayer
 		if err := rows.Scan(&e.UserID, &e.Username, &e.TerraceLevel); err != nil {
 			return nil, err
 		}

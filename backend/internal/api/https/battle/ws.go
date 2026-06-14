@@ -14,29 +14,24 @@ import (
 	"github.com/google/uuid"
 )
 
-type wsDeployMessage struct {
+const deploymentTimeSecs = 180
+
+type wsClientMsg struct {
 	Type   string                   `json:"type"`
-	Troops []engine.TroopDeployment `json:"troops"`
+	Troops []engine.TroopDeployment `json:"troops,omitempty"`
 }
 
-type wsTickBatch struct {
-	Type       string              `json:"type"`
-	Ticks      []engine.TickResult `json:"ticks"`
-	BatchStart int                 `json:"batch_start"`
-}
-
-type wsBattleEnd struct {
+type wsServerMsg struct {
 	Type        string               `json:"type"`
-	Outcome     engine.BattleOutcome `json:"outcome"`
-	Destruction float64              `json:"destruction"`
-	Loot        int                  `json:"loot"`
-	SinMeter    int                  `json:"sin_meter"`
-	Duration    int                  `json:"duration_ticks"`
-}
-
-type wsError struct {
-	Type    string `json:"type"`
-	Message string `json:"message"`
+	TimeLeft    int                  `json:"time_left,omitempty"`
+	Ticks       []engine.TickResult  `json:"ticks,omitempty"`
+	BatchStart  int                  `json:"batch_start,omitempty"`
+	Outcome     engine.BattleOutcome `json:"outcome,omitempty"`
+	Destruction float64              `json:"destruction,omitempty"`
+	Loot        int                  `json:"loot,omitempty"`
+	SinMeter    int                  `json:"sin_meter,omitempty"`
+	Duration    int                  `json:"duration_ticks,omitempty"`
+	Message     string               `json:"message,omitempty"`
 }
 
 func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -46,72 +41,109 @@ func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID := r.Context().Value(ctxkeys.UserID).(uuid.UUID)
+	userID, ok := r.Context().Value(ctxkeys.UserID).(uuid.UUID)
+	if !ok {
+		response.Error(r.Context(), w, http.StatusUnauthorized, fmt.Errorf("missing user id"))
+		return
+	}
 
 	conn, err := h.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		h.Logger.Error("ws upgrade failed", "error", err, "battle_id", battleID)
+		response.Error(r.Context(), w, http.StatusBadRequest, fmt.Errorf("websocket upgrade failed: %w", err))
 		return
 	}
 	defer conn.Close()
 
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	var deployments []engine.TroopDeployment
 
-	var deployMsg wsDeployMessage
-	if err := conn.ReadJSON(&deployMsg); err != nil {
-		conn.WriteJSON(wsError{Type: "error", Message: "failed to read deployment"})
+	conn.WriteJSON(wsServerMsg{Type: "deployment_start", TimeLeft: deploymentTimeSecs})
+
+	conn.SetReadDeadline(time.Now().Add(time.Duration(deploymentTimeSecs+10) * time.Second))
+
+	for {
+		var msg wsClientMsg
+		if err := conn.ReadJSON(&msg); err != nil {
+			break
+		}
+
+		if msg.Type == "done" {
+			break
+		}
+
+		if msg.Type == "deploy" {
+			deployments = append(deployments, msg.Troops...)
+			conn.WriteJSON(wsServerMsg{Type: "deploy_ack", Message: "ok"})
+		}
+	}
+
+	if len(deployments) == 0 {
+		conn.WriteJSON(wsServerMsg{Type: "error", Message: "no troops deployed"})
 		return
 	}
 
-	if deployMsg.Type != "deploy" {
-		conn.WriteJSON(wsError{Type: "error", Message: "expected deploy message"})
+	if err := h.Service.ValidateFullDeployment(r.Context(), userID, deployments); err != nil {
+		switch {
+		case errors.Is(err, service.ErrInsufficientArmyTroops):
+			conn.WriteJSON(wsServerMsg{Type: "error", Message: "insufficient troops"})
+		default:
+			conn.WriteJSON(wsServerMsg{Type: "error", Message: "validation failed"})
+		}
 		return
 	}
 
-	sim, err := h.Service.StartSimulation(r.Context(), battleID, userID, deployMsg.Troops)
+	sim, err := h.Service.PrepareSimulation(r.Context(), battleID, userID, deployments)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrBattleNotFound):
-			conn.WriteJSON(wsError{Type: "error", Message: "battle not found"})
+			conn.WriteJSON(wsServerMsg{Type: "error", Message: "battle not found"})
 		case errors.Is(err, service.ErrBattleNotPending):
-			conn.WriteJSON(wsError{Type: "error", Message: "battle is not pending"})
-		case errors.Is(err, service.ErrInsufficientArmyTroops):
-			conn.WriteJSON(wsError{Type: "error", Message: "insufficient troops"})
+			conn.WriteJSON(wsServerMsg{Type: "error", Message: "battle is not pending"})
 		default:
-			conn.WriteJSON(wsError{Type: "error", Message: "failed to start battle"})
+			conn.WriteJSON(wsServerMsg{Type: "error", Message: "failed to start battle"})
 		}
 		return
+	}
+
+	var allTicks []engine.TickResult
+	for !sim.IsDone() {
+		allTicks = append(allTicks, sim.NextTick())
+	}
+
+	tickBatches := make([][]engine.TickResult, 0)
+	batchSize := 10
+	for i := 0; i < len(allTicks); i += batchSize {
+		end := i + batchSize
+		if end > len(allTicks) {
+			end = len(allTicks)
+		}
+		tickBatches = append(tickBatches, allTicks[i:end])
 	}
 
 	conn.SetReadDeadline(time.Time{})
 
-	batchStart := 0
-	for !sim.IsDone() {
-		batchSize := 10
-		ticks := make([]engine.TickResult, 0, batchSize)
-		for i := 0; i < batchSize && !sim.IsDone(); i++ {
-			ticks = append(ticks, sim.NextTick())
-		}
-
-		conn.WriteJSON(wsTickBatch{
+	for batchIdx, batch := range tickBatches {
+		batchStart := batchIdx * batchSize
+		conn.WriteJSON(wsServerMsg{
 			Type:       "tick_batch",
-			Ticks:      ticks,
+			Ticks:      batch,
 			BatchStart: batchStart,
 		})
-		batchStart += len(ticks)
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	result, err := h.Service.ResolveAndStore(r.Context(), battleID, sim, deployMsg.Troops)
+	outcome, err := h.Service.ResolveAndStore(r.Context(), battleID, sim, deployments)
 	if err != nil {
-		conn.WriteJSON(wsError{Type: "error", Message: "failed to store battle result"})
+		conn.WriteJSON(wsServerMsg{Type: "error", Message: "failed to store battle result"})
 		return
 	}
 
-	conn.WriteJSON(wsBattleEnd{
+	conn.WriteJSON(wsServerMsg{
 		Type:        "battle_end",
-		Outcome:     result.Outcome,
-		Destruction: result.Destruction,
-		Loot:        result.Loot,
-		SinMeter:    result.SinMeter,
-		Duration:    result.Duration,
+		Outcome:     outcome.Outcome,
+		Destruction: outcome.Destruction,
+		Loot:        outcome.Loot,
+		SinMeter:    outcome.SinMeter,
+		Duration:    outcome.Duration,
 	})
 }

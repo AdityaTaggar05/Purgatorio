@@ -52,7 +52,7 @@ func NewBattleService(
 	}
 }
 
-func (s *BattleService) GetMatchList(ctx context.Context, userID uuid.UUID) ([]model.MatchListEntry, error) {
+func (s *BattleService) GetMatchList(ctx context.Context, userID uuid.UUID) ([]model.MatchPlayer, error) {
 	user, err := s.UserRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, purgerr.Wrap(ErrUserNotFound, err)
@@ -60,42 +60,42 @@ func (s *BattleService) GetMatchList(ctx context.Context, userID uuid.UUID) ([]m
 	return s.BattleRepo.GetMatchList(ctx, user.TerraceLevel, userID)
 }
 
-func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defenderID uuid.UUID) (*model.InitiateResponse, error) {
+func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defenderID uuid.UUID) (uuid.UUID, string, error) {
 	if attackerID == defenderID {
-		return nil, purgerr.Wrap(ErrCannotAttackSelf, ErrCannotAttackSelf)
+		return uuid.Nil, "", purgerr.Wrap(ErrCannotAttackSelf, ErrCannotAttackSelf)
 	}
 
 	attacker, err := s.UserRepo.GetUserByID(ctx, attackerID)
 	if err != nil {
-		return nil, purgerr.Wrap(ErrUserNotFound, err)
+		return uuid.Nil, "", purgerr.Wrap(ErrUserNotFound, err)
 	}
 
 	defender, err := s.UserRepo.GetUserByID(ctx, defenderID)
 	if err != nil {
-		return nil, purgerr.Wrap(ErrDefenderNotFound, err)
+		return uuid.Nil, "", purgerr.Wrap(ErrDefenderNotFound, err)
 	}
 
 	if attacker.TerraceLevel != defender.TerraceLevel {
-		return nil, purgerr.Wrap(ErrTerraceLevelMismatch, ErrTerraceLevelMismatch)
+		return uuid.Nil, "", purgerr.Wrap(ErrTerraceLevelMismatch, ErrTerraceLevelMismatch)
 	}
 
 	defenderCombat, err := s.BattleRepo.GetUserCombat(ctx, defenderID)
 	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("failed to get defender combat state"), err)
+		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to get defender combat state"), err)
 	}
 
 	if defenderCombat.ShieldExpiresAt != nil && time.Now().Before(*defenderCombat.ShieldExpiresAt) {
-		return nil, purgerr.Wrap(ErrDefenderShieldActive, ErrDefenderShieldActive)
+		return uuid.Nil, "", purgerr.Wrap(ErrDefenderShieldActive, ErrDefenderShieldActive)
 	}
 
 	buildings, err := s.snapshotDefenderBase(ctx, defenderID)
 	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("failed to snapshot defender base"), err)
+		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to snapshot defender base"), err)
 	}
 
 	snapshotID, err := s.BattleRepo.CreateBaseSnapshot(ctx, defenderID, buildings)
 	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("failed to create base snapshot"), err)
+		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to create base snapshot"), err)
 	}
 
 	battle := model.Battle{
@@ -108,13 +108,10 @@ func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defender
 
 	battleID, err := s.BattleRepo.CreateBattle(ctx, battle)
 	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("failed to create battle"), err)
+		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to create battle"), err)
 	}
 
-	return &model.InitiateResponse{
-		BattleID:     battleID,
-		DefenderName: defender.Username,
-	}, nil
+	return battleID, defender.Username, nil
 }
 
 func (s *BattleService) snapshotDefenderBase(ctx context.Context, userID uuid.UUID) ([]engine.BuildingSnapshot, error) {
@@ -165,7 +162,26 @@ func (s *BattleService) snapshotDefenderBase(ctx context.Context, userID uuid.UU
 	return snapshots, nil
 }
 
-func (s *BattleService) StartSimulation(ctx context.Context, battleID, userID uuid.UUID, deployment []engine.TroopDeployment) (*engine.Simulation, error) {
+func (s *BattleService) ValidateFullDeployment(ctx context.Context, userID uuid.UUID, deployments []engine.TroopDeployment) error {
+	army, err := s.BattleRepo.GetUserArmyForBattle(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to get user army"), err)
+	}
+
+	totals := make(map[string]int)
+	for _, dep := range deployments {
+		totals[dep.TroopType] += dep.Count
+	}
+
+	for troopType, count := range totals {
+		if owned := army.Troops[troopType]; count > owned {
+			return purgerr.Wrap(ErrInsufficientArmyTroops, ErrInsufficientArmyTroops)
+		}
+	}
+	return nil
+}
+
+func (s *BattleService) PrepareSimulation(ctx context.Context, battleID, userID uuid.UUID, deployments []engine.TroopDeployment) (*engine.Simulation, error) {
 	battle, err := s.BattleRepo.GetBattle(ctx, battleID)
 	if err != nil {
 		return nil, purgerr.Wrap(ErrBattleNotFound, err)
@@ -188,21 +204,9 @@ func (s *BattleService) StartSimulation(ctx context.Context, battleID, userID uu
 		return nil, purgerr.Wrap(fmt.Errorf("failed to load base snapshot"), err)
 	}
 
-	army, err := s.BattleRepo.GetUserArmyForBattle(ctx, userID)
-	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("failed to get user army"), err)
-	}
-
-	for _, dep := range deployment {
-		owned := army.Troops[dep.TroopType]
-		if dep.Count > owned {
-			return nil, purgerr.Wrap(ErrInsufficientArmyTroops, ErrInsufficientArmyTroops)
-		}
-	}
-
 	input := engine.BattleInput{
 		Seed:        time.Now().UnixNano(),
-		Deployments: deployment,
+		Deployments: deployments,
 		Buildings:   buildings,
 		Catalog:     s.Catalog,
 		TicksPerSec: 10,
@@ -212,7 +216,7 @@ func (s *BattleService) StartSimulation(ctx context.Context, battleID, userID uu
 	return engine.NewSimulation(input), nil
 }
 
-func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID, sim *engine.Simulation, deployment []engine.TroopDeployment) (*model.BattleResultResponse, error) {
+func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID, sim *engine.Simulation, deployment []engine.TroopDeployment) (*model.BattleOutcome, error) {
 	battle, err := s.BattleRepo.GetBattle(ctx, battleID)
 	if err != nil {
 		return nil, purgerr.Wrap(ErrBattleNotFound, err)
@@ -242,8 +246,6 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		}
 		loot = computeLoot(defenderEco.Penitence, engineResult.Destruction)
 	}
-
-	engineResult.Loot = loot
 
 	if err := s.BattleRepo.UpdateBattleOutcome(ctx, battleID, string(finalOutcome), engineResult.Destruction, loot, engineResult.Duration, *battle.BaseSnapshotID); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to update battle outcome"), err)
@@ -305,8 +307,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		return nil, purgerr.Wrap(fmt.Errorf("failed to store replay"), err)
 	}
 
-	return &model.BattleResultResponse{
-		BattleID:    battleID,
+	return &model.BattleOutcome{
 		Outcome:     finalOutcome,
 		Destruction: engineResult.Destruction,
 		Loot:        loot,
@@ -315,7 +316,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 	}, nil
 }
 
-func (s *BattleService) GetReplay(ctx context.Context, battleID uuid.UUID) (*model.ReplayResponse, error) {
+func (s *BattleService) GetReplay(ctx context.Context, battleID uuid.UUID) (*model.ReplaySimResult, error) {
 	replay, err := s.BattleRepo.GetReplay(ctx, battleID)
 	if err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("replay not found"), err)
@@ -341,7 +342,7 @@ func (s *BattleService) GetReplay(ctx context.Context, battleID uuid.UUID) (*mod
 		allTicks = append(allTicks, sim.NextTick())
 	}
 
-	return &model.ReplayResponse{
+	return &model.ReplaySimResult{
 		Ticks:      allTicks,
 		Result:     sim.Result(),
 		Deployment: replay.Data.Deployment,
