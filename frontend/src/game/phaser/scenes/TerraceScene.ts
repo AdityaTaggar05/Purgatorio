@@ -53,15 +53,17 @@ export class TerraceScene extends Phaser.Scene {
       }
 
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const sub = IsoMath.screenToSubgrid(worldPoint.x, worldPoint.y);
 
       const size = phaserEvents.placementBuilding.size;
+      const sub = IsoMath.screenToSubgrid(worldPoint.x, worldPoint.y, size);
+
       const clampedX = Phaser.Math.Clamp(sub.x, 0, 29 - size + 1);
       const clampedY = Phaser.Math.Clamp(sub.y, 0, 29 - size + 1);
       phaserEvents.ghostPosition = { x: clampedX, y: clampedY };
 
       const screenPos = IsoMath.subgridToScreen(clampedX, clampedY, size);
-      this.ghostSprite.setPosition(screenPos.x, screenPos.y);
+      const tileH = IsoMath.TILE_H / IsoMath.SUBDIVISIONS;
+      this.ghostSprite.setPosition(screenPos.x, screenPos.y + (tileH * size) / 2);
       this.ghostSprite.setTexture(`building_${phaserEvents.placementBuilding.id}`);
       this.ghostSprite.setVisible(true);
 
