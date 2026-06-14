@@ -1,13 +1,15 @@
+import { useState } from "react";
 import GameCanvas from '../../game/phaser/GameCanvas';
 import { useAuth } from '../../hooks/useAuth';
 import { useGame } from '../../hooks/useGame';
 import GameHud from '../../ui/layout/GameHud';
+import ShopPanel from '../../ui/panels/ShopPanel';
 
 export default function GameDashboard() {
   const { user, logout } = useAuth();
   const { state } = useGame();
+  const [shopOpen, setShopOpen] = useState(false);
 
-  const handleAscension = () => console.log('Opening Altar Store Interface...');
   const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
   const handleArmy = () => console.log('Opening Legion Management Array...');
 
@@ -20,11 +22,13 @@ export default function GameDashboard() {
         level={user?.level || 1}
         economy={state.economy}
         sinMeter={state.sinMeter}
-        onAscensionClick={handleAscension}
+        onAscensionClick={() => setShopOpen(true)}
         onLogoutClick={logout}
         onAttackClick={handleAttack}
         onArmyClick={handleArmy}
       />
+
+      <ShopPanel open={shopOpen} onClose={() => setShopOpen(false)} />
     </div>
   );
 }
