@@ -28,4 +28,19 @@ export class IsoMath {
   static gridToTiles(size: number): number {
     return Math.ceil(size / this.SUBDIVISIONS);
   }
+
+  // Inverse: screen pixel position → nearest subgrid coordinate
+  static screenToSubgrid(screenX: number, screenY: number, buildingSize = 1): { x: number; y: number } {
+    const halfW = this.TILE_W / 2;
+    const halfH = this.TILE_H / 2;
+    const det = 2 * halfW * halfH;
+    const tileX = (screenX * halfH + halfW * screenY) / det;
+    const tileY = (halfW * screenY - halfH * screenX) / det;
+    const gf = this.SUBDIVISIONS;
+    const centerOffset = buildingSize / (gf * 2);
+    return {
+      x: Math.round((tileX + 0.5 - centerOffset) * gf),
+      y: Math.round((tileY + 0.5 - centerOffset) * gf),
+    };
+  }
 }
