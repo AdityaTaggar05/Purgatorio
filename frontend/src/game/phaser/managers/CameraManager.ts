@@ -5,7 +5,8 @@ export class CameraManager {
   private cam: Phaser.Cameras.Scene2D.Camera;
   private isPanning = false;
 
-  private mapSize?: number;
+  private mapW = 30;
+  private mapH = 30;
 
   constructor(scene: Phaser.Scene) {
     this.cam = scene.cameras.main;
@@ -15,14 +16,15 @@ export class CameraManager {
   }
 
   private setupControls(scene: Phaser.Scene) {
-    scene.input.on('pointerdown', (pointer) => {
-      if (pointer.middleButtonDown() && this.mapSize) {
-        this.centerOnMap(this.mapSize)
+    scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.middleButtonDown()) {
+        this.centerOnMap();
       }
-
-      return this.isPanning = true;
+      this.isPanning = true;
     });
-    scene.input.on('pointerup', () => this.isPanning = false);
+    scene.input.on('pointerup', () => {
+      this.isPanning = false;
+    });
 
     scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (!this.isPanning) return;
@@ -31,23 +33,17 @@ export class CameraManager {
     });
 
     scene.input.on('wheel', (_: unknown, __: unknown, ___: unknown, deltaY: number) => {
-      const newZoom = Phaser.Math.Clamp(this.cam.zoom - deltaY * 0.001, 0.15, 0.6);
+      const newZoom = Phaser.Math.Clamp(this.cam.zoom - deltaY * 0.001, 0.1, 0.6);
       this.cam.setZoom(newZoom);
     });
   }
 
-  public centerOnMap(mapSize: number) {
-    if (!this.mapSize) this.mapSize = mapSize;
+  public setMapSize(tilesW: number, tilesH: number) {
+    this.mapW = tilesW;
+    this.mapH = tilesH;
 
-    const halfMap = mapSize / 2;
-
-    this.cam.setZoom(0.4);
-    this.cam.centerOn(0, halfMap * IsoMath.TILE_H);
-  }
-
-  public setBoundsFromMap(mapSize: number) {
-    const totalMapWidth = mapSize * IsoMath.TILE_W;
-    const totalMapHeight = mapSize * IsoMath.TILE_H;
+    const totalMapWidth = tilesW * IsoMath.TILE_W;
+    const totalMapHeight = tilesH * IsoMath.TILE_H;
 
     const horizontalPadding = 1000;
     const verticalPadding = 1600;
@@ -55,8 +51,15 @@ export class CameraManager {
     this.cam.setBounds(
       -totalMapWidth / 2 - horizontalPadding,
       -verticalPadding / 2,
-      totalMapWidth + (horizontalPadding * 2),
+      totalMapWidth + horizontalPadding * 2,
       totalMapHeight + verticalPadding / 2
     );
+  }
+
+  public centerOnMap() {
+    this.cam.setZoom(0.3);
+
+    const centerPos = IsoMath.tileToScreen(this.mapW / 2, this.mapH / 2);
+    this.cam.centerOn(centerPos.x, centerPos.y);
   }
 }

@@ -1,8 +1,9 @@
 export class IsoMath {
   static TILE_W = 974;
   static TILE_H = 552;
+  static SUBDIVISIONS = 3;
 
-  // Converts a 10x10 tile coordinate to pixel screen space
+  // Converts a tile coordinate to pixel screen space
   static tileToScreen(x: number, y: number): { x: number; y: number } {
     return {
       x: (x - y) * (this.TILE_W / 2),
@@ -10,15 +11,21 @@ export class IsoMath {
     };
   }
 
-  // Converts a 30x30 subgrid coordinate to pixel screen space
-  static subgridToScreen(gridFactor: number, subX: number, subY: number, buildingSize = 1): { x: number; y: number } {
-    const centerOffset = buildingSize / (gridFactor * 2);
-    const effectiveX = centerOffset - 0.5 + (subX / gridFactor);
-    const effectiveY = centerOffset - 0.5 + (subY / gridFactor);
+  // Converts a subgrid coordinate (0..gridW-1) to pixel screen space
+  static subgridToScreen(subX: number, subY: number, buildingSize = 1): { x: number; y: number } {
+    const gf = this.SUBDIVISIONS;
+    const centerOffset = buildingSize / (gf * 2);
+    const effectiveX = centerOffset - 0.5 + (subX / gf);
+    const effectiveY = centerOffset - 0.5 + (subY / gf);
 
     return {
       x: (effectiveX - effectiveY) * (this.TILE_W / 2),
       y: (effectiveX + effectiveY) * (this.TILE_H / 2)
     };
+  }
+
+  // Converts API grid dimensions to tile count
+  static gridToTiles(size: number): number {
+    return Math.ceil(size / this.SUBDIVISIONS);
   }
 }
