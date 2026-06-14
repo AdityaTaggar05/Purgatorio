@@ -6,15 +6,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/ctxkeys"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 	"github.com/google/uuid"
 )
 
+type initiateRequestDTO struct {
+	DefenderID string `json:"defender_id" validate:"required,uuid"`
+}
+
+type initiateResponseDTO struct {
+	BattleID     uuid.UUID `json:"battle_id"`
+	DefenderName string    `json:"defender_name"`
+}
+
 func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
-	var req model.InitiateRequest
+	var req initiateRequestDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.BadRequest(r.Context(), w, fmt.Errorf("invalid request JSON"))
@@ -33,7 +41,7 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.Service.InitiateBattle(r.Context(), attackerID, defenderID)
+	battleID, defenderName, err := h.Service.InitiateBattle(r.Context(), attackerID, defenderID)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrCannotAttackSelf):
@@ -50,5 +58,8 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Created(w, resp, "battle initiated")
+	response.Created(w, initiateResponseDTO{
+		BattleID:     battleID,
+		DefenderName: defenderName,
+	}, "battle initiated")
 }

@@ -6,11 +6,18 @@ import (
 	"net/http"
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/service"
+	"github.com/AdityaTaggar05/Purgatorio/internal/engine"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/ctxkeys"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/response"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 )
+
+type replayResponseDTO struct {
+	Ticks      []engine.TickResult      `json:"ticks"`
+	Result     engine.BattleResult      `json:"result"`
+	Deployment []engine.TroopDeployment `json:"deployment"`
+}
 
 func (h *BattleHandler) HandleAttacks(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(ctxkeys.UserID).(uuid.UUID)
@@ -43,7 +50,7 @@ func (h *BattleHandler) HandleReplay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	replay, err := h.Service.GetReplay(r.Context(), battleID)
+	simResult, err := h.Service.GetReplay(r.Context(), battleID)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrBattleNotFound):
@@ -54,5 +61,9 @@ func (h *BattleHandler) HandleReplay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Success(w, replay, "replay retrieved")
+	response.Success(w, replayResponseDTO{
+		Ticks:      simResult.Ticks,
+		Result:     simResult.Result,
+		Deployment: simResult.Deployment,
+	}, "replay retrieved")
 }

@@ -7,30 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type MatchListEntry struct {
-	UserID       uuid.UUID `json:"user_id"`
-	Username     string    `json:"username"`
-	TerraceLevel int       `json:"terrace_level"`
-}
-
-type InitiateRequest struct {
-	DefenderID string `json:"defender_id" validate:"required,uuid"`
-}
-
-type InitiateResponse struct {
-	BattleID     uuid.UUID `json:"battle_id"`
-	DefenderName string    `json:"defender_name"`
-}
-
-type BattleResultResponse struct {
-	BattleID    uuid.UUID            `json:"battle_id"`
-	Outcome     engine.BattleOutcome `json:"outcome"`
-	Destruction float64              `json:"destruction"`
-	Loot        int                  `json:"loot"`
-	Duration    int                  `json:"duration"`
-	SinMeter    int                  `json:"sin_meter"`
-}
-
 type Battle struct {
 	ID             uuid.UUID
 	AttackerID     uuid.UUID
@@ -53,11 +29,11 @@ type UserCombat struct {
 }
 
 type BattleReplay struct {
-	BattleID   uuid.UUID               `json:"battle_id"`
-	AttackerID uuid.UUID               `json:"attacker_id"`
-	DefenderID uuid.UUID               `json:"defender_id"`
-	Outcome    string                  `json:"outcome"`
-	Data       ReplayData              `json:"data"`
+	BattleID   uuid.UUID              `json:"battle_id"`
+	AttackerID uuid.UUID              `json:"attacker_id"`
+	DefenderID uuid.UUID              `json:"defender_id"`
+	Outcome    string                 `json:"outcome"`
+	Data       ReplayData             `json:"data"`
 }
 
 type ReplayData struct {
@@ -66,8 +42,22 @@ type ReplayData struct {
 	BaseSnapshotID uuid.UUID                `json:"base_snapshot_id"`
 }
 
-type ReplayResponse struct {
-	Ticks      []engine.TickResult       `json:"ticks"`
-	Result     engine.BattleResult       `json:"result"`
-	Deployment []engine.TroopDeployment  `json:"deployment"`
+type MatchPlayer struct {
+	UserID       uuid.UUID
+	Username     string
+	TerraceLevel int
+}
+
+type BattleOutcome struct {
+	Outcome     engine.BattleOutcome
+	Destruction float64
+	Loot        int
+	Duration    int
+	SinMeter    int
+}
+
+type ReplaySimResult struct {
+	Ticks      []engine.TickResult
+	Result     engine.BattleResult
+	Deployment []engine.TroopDeployment
 }
