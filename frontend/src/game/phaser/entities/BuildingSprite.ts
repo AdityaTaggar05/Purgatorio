@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { PlacedBuilding } from '../../../types/building';
 import { IsoMath } from '../managers/IsoMath';
+import { phaserEvents } from '../events';
 
 const SPRITE_ORIGIN = { x: 0.5, y: 1.0 };
 const GF = IsoMath.SUBDIVISIONS;
@@ -61,6 +62,12 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     this.on('pointerout', () => {
       this.scene.input.setDefaultCursor('default');
       this.hideSelectionRing();
+    });
+
+    this.on('pointerdown', () => {
+      if (phaserEvents.mode === "none" && phaserEvents.onBuildingClick) {
+        phaserEvents.onBuildingClick(this.buildingData);
+      }
     });
   }
 
