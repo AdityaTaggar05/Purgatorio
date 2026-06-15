@@ -3,8 +3,7 @@ import type { HudProps } from '../../types/hud';
 export default function GameHud({
   username,
   level,
-  penitence,
-  grace,
+  economy,
   sinMeter,
   onAscensionClick,
   onLogoutClick,
@@ -50,13 +49,15 @@ export default function GameHud({
           {/* Penitence Meter */}
           <div className="flex flex-col w-full">
             <div className="flex justify-between text-[10px] tracking-wider mb-0.5 font-sans">
-              <span className="text-purple-400 font-serif uppercase tracking-[0.15em] text-[9px] font-bold">{penitence.label}</span>
-              <span className="text-gray-400 text-xs font-medium">{penitence.current} / {penitence.max}</span>
+              <span className="text-purple-400 font-serif uppercase tracking-[0.15em] text-[9px] font-bold">Penitence</span>
+              <span className="text-gray-400 text-xs font-medium">
+                {economy?.penitence ?? 0} / {economy?.max_penitence ?? 1}
+              </span>
             </div>
             <div className="w-full h-2 bg-black/50 border border-purgatory-border rounded-sm overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-900 to-purple-500 transition-all duration-300"
-                style={{ width: `${getPercent(penitence.current, penitence.max)}%` }}
+                style={{ width: `${getPercent(economy?.penitence ?? 0, economy?.max_penitence ?? 1)}%` }}
               />
             </div>
           </div>
@@ -64,13 +65,15 @@ export default function GameHud({
           {/* Grace Meter */}
           <div className="flex flex-col w-full">
             <div className="flex justify-between text-[10px] tracking-wider mb-0.5 font-sans">
-              <span className="text-teal-400 font-serif uppercase tracking-[0.15em] text-[9px] font-bold">{grace.label}</span>
-              <span className="text-gray-400 text-xs font-medium">{grace.current} / {grace.max}</span>
+              <span className="text-teal-400 font-serif uppercase tracking-[0.15em] text-[9px] font-bold">Grace</span>
+              <span className="text-gray-400 text-xs font-medium">
+                {economy?.grace ?? 0}
+              </span>
             </div>
             <div className="w-full h-2 bg-black/50 border border-purgatory-border rounded-sm overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-teal-900 to-teal-500 transition-all duration-300"
-                style={{ width: `${getPercent(grace.current, grace.max)}%` }}
+                style={{ width: `${economy?.grace ? 100 : 0}%` }}
               />
             </div>
           </div>

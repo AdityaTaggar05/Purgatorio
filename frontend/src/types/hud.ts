@@ -1,14 +1,9 @@
-export interface ResourceMeter {
-  current: number;
-  max: number;
-  label: string;
-}
+import type { UserEconomy } from "./economy";
 
 export interface HudProps {
   username: string;
   level: number;
-  penitence: ResourceMeter;
-  grace: ResourceMeter;
+  economy: UserEconomy | null;
   sinMeter: number;
   onAscensionClick: () => void;
   onLogoutClick: () => void;

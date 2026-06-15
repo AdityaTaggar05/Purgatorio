@@ -1,23 +1,39 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { TerraceScene } from './scenes/TerraceScene';
+import type { BaseLayout } from '../../../types/building';
 
-export default function GameCanvas() {
+let latestLayout: BaseLayout | null = null;
+
+export function setPhaserLayout(layout: BaseLayout | null) {
+  latestLayout = layout;
+}
+
+export { latestLayout };
+
+interface GameCanvasProps {
+  layout: BaseLayout | null;
+}
+
+export default function GameCanvas({ layout }: GameCanvasProps) {
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserInstance = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
+    latestLayout = layout;
+  }, [layout]);
+
+  useEffect(() => {
     if (!gameRef.current) return;
 
-    // Phaser Configuration
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      parent: gameRef.current, // Attaches the canvas to this React div
+      parent: gameRef.current,
       width: '100%',
       height: '100%',
       scene: [TerraceScene],
       transparent: true,
-      pixelArt: false, 
+      pixelArt: false,
       antialias: true,
       antialiasGL: true,
       scale: {
@@ -26,10 +42,8 @@ export default function GameCanvas() {
       },
     };
 
-    // Initialize the engine
     phaserInstance.current = new Phaser.Game(config);
 
-    // Destroy the game instance on unmount or Fast Refresh
     return () => {
       if (phaserInstance.current) {
         phaserInstance.current.destroy(true);

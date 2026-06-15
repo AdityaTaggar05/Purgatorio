@@ -5,6 +5,7 @@ import RegisterPage from './app/routes/Register'
 import GamePage from './app/routes/Game'
 import SplashScreen from './app/routes/Splash'
 import ProtectedRoute from './app/routes/Protected'
+import { GameProvider } from './app/providers/GameProvider'
 
 function App() {
   return (
@@ -14,7 +15,9 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/game" element={
         <ProtectedRoute>
-          <GamePage />
+          <GameProvider>
+            <GamePage />
+          </GameProvider>
         </ProtectedRoute>
       } />
     </Routes>

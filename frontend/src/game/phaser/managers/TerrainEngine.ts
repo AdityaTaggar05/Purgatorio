@@ -15,18 +15,18 @@ export class TerrainEngine {
     this.groundLayer.setDepth(0);
   }
 
-  public generateGroundGrid(mapSize: number) {
+  public generateGroundGrid(tilesW: number, tilesH: number) {
     const tilePositions: Array<{ x: number; y: number; gridX: number; gridY: number; edge: boolean }> = [];
 
-    for (let y = 0; y < mapSize; y++) {
-      for (let x = 0; x < mapSize; x++) {
+    for (let y = 0; y < tilesH; y++) {
+      for (let x = 0; x < tilesW; x++) {
         const screenPos = IsoMath.tileToScreen(x, y);
         tilePositions.push({
           x: screenPos.x,
           y: screenPos.y,
           gridX: x,
           gridY: y,
-          edge: x == mapSize - 1 || y == mapSize - 1
+          edge: x === tilesW - 1 || y === tilesH - 1,
         });
       }
     }
@@ -34,15 +34,10 @@ export class TerrainEngine {
     tilePositions.sort((a, b) => a.y - b.y);
 
     tilePositions.forEach((pos) => {
-      let tileKey: string;
-
-      if (pos.edge) tileKey = 'ground-tile-edge';
-      else tileKey = 'ground-tile'
-
+      const tileKey = pos.edge ? 'ground-tile-edge' : 'ground-tile';
       const tile = this.scene.add.image(pos.x, pos.y, tileKey);
 
       tile.setOrigin(0.5, 0.45);
-
       tile.setDepth(pos.gridX + pos.gridY);
       tile.setData('gridCoordinates', { x: pos.gridX, y: pos.gridY });
 
