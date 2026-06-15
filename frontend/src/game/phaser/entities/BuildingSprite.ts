@@ -10,7 +10,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   public buildingData: PlacedBuilding;
   private mainSprite: Phaser.GameObjects.Sprite;
   private selectionRing!: Phaser.GameObjects.Graphics;
-  private size: number;
+  private spriteW: number;
+  private spriteH: number;
 
   public currentHealth: number;
   public maxHealth: number;
@@ -21,19 +22,18 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
 
     this.maxHealth = data.hp ?? data.size * 500;
     this.currentHealth = this.maxHealth;
-    this.size = data.size;
 
     const spriteKey = `building_${data.building_id}`;
-    const w = (IsoMath.TILE_W / GF) * data.size;
-    const h = (IsoMath.TILE_H / GF) * data.size;
+    this.spriteW = (IsoMath.TILE_W / GF) * data.size;
+    this.spriteH = (IsoMath.TILE_H / GF) * data.size;
 
     try {
       this.mainSprite = scene.add.sprite(0, 0, spriteKey);
       this.mainSprite.setOrigin(SPRITE_ORIGIN.x, SPRITE_ORIGIN.y);
 
-      const scale = w / this.mainSprite.width;
+      const scale = this.spriteW / this.mainSprite.width;
       this.mainSprite.setScale(scale);
-      this.mainSprite.setPosition(0, h / 2);
+      this.mainSprite.setPosition(0, this.spriteH / 2);
 
       this.add(this.mainSprite);
     } catch (_) {
@@ -46,11 +46,15 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   }
 
   private setupInteractions() {
-    const width = this.mainSprite?.width ?? this.buildingData.size * 100;
-    const height = this.mainSprite?.height ?? this.buildingData.size * 150;
+    const scaledHeight = this.mainSprite ? this.mainSprite.height : this.spriteH;
 
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-width / 2, -height, width, height),
+      new Phaser.Geom.Rectangle(
+        -this.spriteW / 2,
+        this.spriteH / 2 - scaledHeight,
+        this.spriteW,
+        scaledHeight
+      ),
       Phaser.Geom.Rectangle.Contains
     );
 
@@ -78,14 +82,14 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
       this.selectionRing.lineStyle(3, 0x00ff00, 1.0);
       this.selectionRing.fillStyle(0x00ff00, 0.2);
 
-      const w = (IsoMath.TILE_W / GF) * this.size;
-      const h = (IsoMath.TILE_H / GF) * this.size;
+      const hw = this.spriteW / 2;
+      const hh = this.spriteH / 2;
 
       this.selectionRing.beginPath();
-      this.selectionRing.moveTo(0, -h / 2);
-      this.selectionRing.lineTo(w / 2, 0);
-      this.selectionRing.lineTo(0, h / 2);
-      this.selectionRing.lineTo(-w / 2, 0);
+      this.selectionRing.moveTo(0, -hh);
+      this.selectionRing.lineTo(hw, 0);
+      this.selectionRing.lineTo(0, hh);
+      this.selectionRing.lineTo(-hw, 0);
       this.selectionRing.closePath();
       this.selectionRing.strokePath();
     }

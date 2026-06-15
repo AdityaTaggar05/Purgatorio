@@ -1,7 +1,7 @@
 export class IsoMath {
   static TILE_W = 974;
   static TILE_H = 552;
-  static SUBDIVISIONS = 3;
+  static SUBDIVISIONS = 2;
 
   // Converts a tile coordinate to pixel screen space
   static tileToScreen(x: number, y: number): { x: number; y: number } {
