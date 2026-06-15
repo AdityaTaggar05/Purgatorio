@@ -1,9 +1,13 @@
 import type { ApiClient } from "../client";
 import type { ApiResponse } from "../../types/api";
-import type { ArmyResponse, Troop } from "../../types/army";
+import type { Troop, ArmyResponse } from "../../types/army";
 
-export function getCatalog(api: ApiClient): Promise<ApiResponse<{ catalog: Troop[]; army: ArmyResponse }>> {
-  return api.get<{ catalog: Troop[]; army: ArmyResponse }>("/army");
+export function getCatalog(api: ApiClient): Promise<ApiResponse<{ troops: Troop[] }>> {
+  return api.get<{ troops: Troop[] }>("/army/troops");
+}
+
+export function getMyTroops(api: ApiClient): Promise<ApiResponse<ArmyResponse>> {
+  return api.get<ArmyResponse>("/army/my-troops");
 }
 
 export function trainTroop(api: ApiClient, troopId: string, count: number): Promise<ApiResponse<ArmyResponse>> {

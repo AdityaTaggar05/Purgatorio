@@ -61,7 +61,15 @@ export class ApiClient {
       return { success: true, data: null as unknown as T };
     }
 
-    return response.json();
+    try {
+      return response.json();
+    } catch {
+      return {
+        success: false,
+        data: null as unknown as T,
+        error: { code: "ParseError", message: `Invalid response from server (${response.status})` },
+      };
+    }
   }
 
   get<T>(path: string): Promise<ApiResponse<T>> {

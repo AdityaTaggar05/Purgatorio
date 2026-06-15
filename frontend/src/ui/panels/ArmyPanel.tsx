@@ -22,13 +22,15 @@ export default function ArmyPanel({ open, onClose }: ArmyPanelProps) {
     setError(null);
     setLoading(true);
 
-    armyApi.getCatalog(api).then((res) => {
+    Promise.all([
+      armyApi.getCatalog(api),
+      armyApi.getMyTroops(api),
+    ]).then(([catalogRes, armyRes]) => {
       if (cancelled) return;
-      if (res.success) {
-        setCatalog(res.data.catalog);
-        setArmy(res.data.army);
-      } else {
-        setError(res.error?.message ?? "Failed to load army data");
+      if (catalogRes.success) setCatalog(catalogRes.data.troops);
+      if (armyRes.success) setArmy(armyRes.data);
+      if (!catalogRes.success || !armyRes.success) {
+        setError(catalogRes.error?.message ?? armyRes.error?.message ?? "Failed to load army data");
       }
       setLoading(false);
     });
