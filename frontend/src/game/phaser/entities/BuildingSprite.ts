@@ -11,6 +11,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   private mainSprite: Phaser.GameObjects.Sprite;
   private hoverRing!: Phaser.GameObjects.Graphics;
   private selectedTile!: Phaser.GameObjects.Graphics;
+  private upgradeIndicator!: Phaser.GameObjects.Graphics;
+  private upgradeTween: Phaser.Tweens.Tween | null = null;
   private spriteW: number;
   private spriteH: number;
   private _selected = false;
@@ -78,6 +80,14 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     this.selectedTile.fillPath();
     this.selectedTile.strokePath();
     this.selectedTile.setVisible(false);
+
+    this.upgradeIndicator = scene.add.graphics();
+    this.upgradeIndicator.setPosition(this.x, this.y - hh - 4);
+    this.upgradeIndicator.fillStyle(0x38bdf8, 0.9);
+    this.upgradeIndicator.fillCircle(0, 0, 5);
+    this.upgradeIndicator.setVisible(false);
+
+    this.syncUpgradeIndicator();
   }
 
   set selected(value: boolean) {
@@ -87,6 +97,31 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
 
   get selected(): boolean {
     return this._selected;
+  }
+
+  private syncUpgradeIndicator() {
+    const upgrading = !!this.buildingData.metadata?.upgrade_ends_at;
+    this.upgradeIndicator.setVisible(upgrading);
+
+    if (upgrading && !this.upgradeTween) {
+      this.upgradeTween = this.scene.tweens.add({
+        targets: this.upgradeIndicator,
+        alpha: 0.3,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    } else if (!upgrading && this.upgradeTween) {
+      this.upgradeTween.destroy();
+      this.upgradeTween = null;
+      this.upgradeIndicator.setAlpha(1);
+    }
+  }
+
+  public updateData(data: PlacedBuilding) {
+    this.buildingData = data;
+    this.syncUpgradeIndicator();
   }
 
   private setupInteractions() {
@@ -131,13 +166,18 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     });
 
     if (this.currentHealth <= 0) {
-      this.handleDestruction();
+      this.destroy();
     }
   }
 
-  private handleDestruction() {
-    this.hoverRing.destroy();
-    this.selectedTile.destroy();
-    this.destroy();
+  destroy(fromScene?: boolean) {
+    if (this.upgradeTween) {
+      this.upgradeTween.destroy();
+      this.upgradeTween = null;
+    }
+    this.hoverRing?.destroy();
+    this.selectedTile?.destroy();
+    this.upgradeIndicator?.destroy();
+    super.destroy(fromScene);
   }
 }
