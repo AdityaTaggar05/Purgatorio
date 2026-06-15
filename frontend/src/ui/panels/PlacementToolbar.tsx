@@ -40,7 +40,7 @@ interface PlacementToolbarProps {
 }
 
 export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutChanged }: PlacementToolbarProps) {
-  const { state, api, dispatch } = useGame();
+  const { state, api } = useGame();
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
@@ -77,7 +77,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
     phaserEvents.placementBuilding = { id: item.id, size: item.size };
     setInventoryOpen(false);
 
-    phaserEvents.onGridClick = async (x: number, y: number) => {
+    phaserEvents.onGridClick = async () => {
       const pos = phaserEvents.ghostPosition;
       if (!pos) return;
 
@@ -101,7 +101,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
     phaserEvents.mode = "place";
     phaserEvents.placementBuilding = { id: buildingMenu.building_id, size: buildingMenu.size };
 
-    phaserEvents.onGridClick = async (x: number, y: number) => {
+    phaserEvents.onGridClick = async () => {
       const pos = phaserEvents.ghostPosition;
       if (!pos) return;
 
