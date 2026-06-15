@@ -12,6 +12,7 @@ export interface GameState {
   sinMeter: number;
   isLoading: boolean;
   error: string | null;
+  checkInResult: string | null;
 }
 
 export interface GameContextType {
@@ -27,12 +28,19 @@ export type GameAction =
   | { type: "SET_ARMY"; payload: ArmyResponse }
   | { type: "SET_SIN_METER"; payload: number }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null };
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_CHECK_IN_RESULT"; payload: string | null };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "SET_ECONOMY":
-      return { ...state, economy: action.payload };
+      return {
+        ...state,
+        economy: {
+          ...action.payload,
+          overflow_penitence: action.payload.overflow_penitence ?? state.economy?.overflow_penitence ?? 0,
+        },
+      };
     case "SET_LAYOUT":
       return { ...state, layout: action.payload };
     case "SET_TROOP_CATALOG":
@@ -45,6 +53,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, isLoading: action.payload };
     case "SET_ERROR":
       return { ...state, error: action.payload };
+    case "SET_CHECK_IN_RESULT":
+      return { ...state, checkInResult: action.payload };
     default:
       return state;
   }
