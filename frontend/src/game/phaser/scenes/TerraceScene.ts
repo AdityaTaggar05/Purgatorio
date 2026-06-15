@@ -7,11 +7,15 @@ import { LayoutEngine } from "../managers/LayoutEngine";
 import { TerrainEngine } from "../managers/TerrainEngine";
 
 export class TerraceScene extends Phaser.Scene {
+  static SUBGRID_LAYER = "subgrid";
+
   private terrain!: TerrainEngine;
   private layoutEngine!: LayoutEngine;
   private cameraManager!: CameraManager;
   private ghostSprite!: Phaser.GameObjects.Sprite;
+  private subgridGraphics!: Phaser.GameObjects.Graphics;
   private initialized = false;
+  private subgridDrawn = false;
 
   preload() {
     this.load.image('ground-tile', '/assets/ground-tile.png');
@@ -33,6 +37,10 @@ export class TerraceScene extends Phaser.Scene {
     this.ghostSprite.setVisible(false);
     this.ghostSprite.setAlpha(0.5);
     this.ghostSprite.setDepth(9999);
+
+    this.subgridGraphics = this.add.graphics();
+    this.subgridGraphics.setDepth(50);
+    this.subgridGraphics.setVisible(false);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.middleButtonDown()) return;
@@ -81,6 +89,90 @@ export class TerraceScene extends Phaser.Scene {
     if (this.initialized && latestLayout) {
       this.tryRender();
     }
+
+    const inPlaceMode = phaserEvents.mode === "place";
+    if (inPlaceMode && !this.subgridDrawn) {
+      this.drawSubgridOverlay();
+      this.subgridDrawn = true;
+    } else if (!inPlaceMode && this.subgridDrawn) {
+      this.subgridGraphics.clear();
+      this.subgridGraphics.setVisible(false);
+      this.subgridDrawn = false;
+    }
+  }
+
+  private drawSubgridOverlay() {
+    const gf = IsoMath.SUBDIVISIONS;
+    const gridW = 30;
+    const gridH = 30;
+
+    const toScreen = (sx: number, sy: number) => IsoMath.tileToScreen(sx / gf, sy / gf);
+
+    this.subgridGraphics.clear();
+
+    // Subgrid checkerboard fill
+    for (let x = 0; x < gridW; x++) {
+      for (let y = 0; y < gridH; y++) {
+        if ((x + y) % 2 === 1) continue;
+        const a = toScreen(x, y);
+        const b = toScreen(x + 1, y);
+        const c = toScreen(x + 1, y + 1);
+        const d = toScreen(x, y + 1);
+
+        this.subgridGraphics.fillStyle(0xffffff, 0.4);
+        this.subgridGraphics.beginPath();
+        this.subgridGraphics.moveTo(a.x, a.y);
+        this.subgridGraphics.lineTo(b.x, b.y);
+        this.subgridGraphics.lineTo(c.x, c.y);
+        this.subgridGraphics.lineTo(d.x, d.y);
+        this.subgridGraphics.closePath();
+        this.subgridGraphics.fillPath();
+      }
+    }
+
+    // Subgrid lines
+    this.subgridGraphics.lineStyle(4, 0xffffff, 0.6);
+    for (let x = 0; x <= gridW; x++) {
+      const start = toScreen(x, 0);
+      const end = toScreen(x, gridH);
+      this.subgridGraphics.beginPath();
+      this.subgridGraphics.moveTo(start.x, start.y);
+      this.subgridGraphics.lineTo(end.x, end.y);
+      this.subgridGraphics.strokePath();
+    }
+    for (let y = 0; y <= gridH; y++) {
+      const start = toScreen(0, y);
+      const end = toScreen(gridW, y);
+      this.subgridGraphics.beginPath();
+      this.subgridGraphics.moveTo(start.x, start.y);
+      this.subgridGraphics.lineTo(end.x, end.y);
+      this.subgridGraphics.strokePath();
+    }
+
+    // Ground-tile boundaries (bold)
+    const tilesW = IsoMath.gridToTiles(gridW);
+    const tilesH = IsoMath.gridToTiles(gridH);
+    this.subgridGraphics.lineStyle(2, 0xffffff, 0.15);
+    for (let tx = 0; tx <= tilesW; tx++) {
+      const x = tx * gf;
+      const start = toScreen(x, 0);
+      const end = toScreen(x, gridH);
+      this.subgridGraphics.beginPath();
+      this.subgridGraphics.moveTo(start.x, start.y);
+      this.subgridGraphics.lineTo(end.x, end.y);
+      this.subgridGraphics.strokePath();
+    }
+    for (let ty = 0; ty <= tilesH; ty++) {
+      const y = ty * gf;
+      const start = toScreen(0, y);
+      const end = toScreen(gridW, y);
+      this.subgridGraphics.beginPath();
+      this.subgridGraphics.moveTo(start.x, start.y);
+      this.subgridGraphics.lineTo(end.x, end.y);
+      this.subgridGraphics.strokePath();
+    }
+
+    this.subgridGraphics.setVisible(true);
   }
 
   private lastLayoutKey = "";
