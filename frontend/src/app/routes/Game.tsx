@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGame } from '../../hooks/useGame';
 import GameHud from '../../ui/layout/GameHud';
 import ShopPanel from '../../ui/panels/ShopPanel';
+import ArmyPanel from '../../ui/panels/ArmyPanel';
 import PlacementToolbar from '../../ui/panels/PlacementToolbar';
 import { phaserEvents } from '../../game/phaser/events';
 import * as baseApi from '../../api/endpoints/base';
@@ -13,6 +14,7 @@ export default function GameDashboard() {
   const { user, logout } = useAuth();
   const { state, api, dispatch } = useGame();
   const [shopOpen, setShopOpen] = useState(false);
+  const [armyOpen, setArmyOpen] = useState(false);
   const [buildingMenu, setBuildingMenu] = useState<PlacedBuilding | null>(null);
 
   const selectBuilding = useCallback((b: PlacedBuilding | null) => {
@@ -42,7 +44,6 @@ export default function GameDashboard() {
   }, [selectBuilding]);
 
   const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
-  const handleArmy = () => console.log('Opening Legion Management Array...');
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#111111]">
@@ -56,10 +57,11 @@ export default function GameDashboard() {
         onAscensionClick={() => setShopOpen(true)}
         onLogoutClick={logout}
         onAttackClick={handleAttack}
-        onArmyClick={handleArmy}
+        onArmyClick={() => setArmyOpen(true)}
       />
 
       <ShopPanel open={shopOpen} onClose={() => setShopOpen(false)} />
+      <ArmyPanel open={armyOpen} onClose={() => setArmyOpen(false)} />
 
       <PlacementToolbar
         buildingMenu={buildingMenu}
