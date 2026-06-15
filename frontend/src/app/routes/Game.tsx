@@ -15,6 +15,15 @@ export default function GameDashboard() {
   const [shopOpen, setShopOpen] = useState(false);
   const [buildingMenu, setBuildingMenu] = useState<PlacedBuilding | null>(null);
 
+  const selectBuilding = useCallback((b: PlacedBuilding | null) => {
+    setBuildingMenu(b);
+
+    const buildings = phaserEvents.getActiveBuildings?.() ?? [];
+    buildings.forEach(sprite => {
+      sprite.selected = !!(b && sprite.buildingData.x === b.x && sprite.buildingData.y === b.y && sprite.buildingData.building_id === b.building_id);
+    });
+  }, []);
+
   const refetchLayout = useCallback(async () => {
     const res = await baseApi.getLayout(api);
     if (res.success) {
@@ -28,9 +37,9 @@ export default function GameDashboard() {
   }, [api, dispatch]);
 
   useEffect(() => {
-    phaserEvents.onBuildingClick = (b) => setBuildingMenu(b);
+    phaserEvents.onBuildingClick = selectBuilding;
     return () => { phaserEvents.onBuildingClick = null; };
-  }, []);
+  }, [selectBuilding]);
 
   const handleAttack = () => console.log('Initiating Combat Encounter Instance...');
   const handleArmy = () => console.log('Opening Legion Management Array...');
@@ -54,7 +63,7 @@ export default function GameDashboard() {
 
       <PlacementToolbar
         buildingMenu={buildingMenu}
-        onCloseMenu={() => setBuildingMenu(null)}
+        onCloseMenu={() => selectBuilding(null)}
         onLayoutChanged={refetchLayout}
       />
     </div>

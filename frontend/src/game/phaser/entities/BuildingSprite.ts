@@ -9,9 +9,11 @@ const GF = IsoMath.SUBDIVISIONS;
 export class BuildingSprite extends Phaser.GameObjects.Container {
   public buildingData: PlacedBuilding;
   private mainSprite: Phaser.GameObjects.Sprite;
-  private selectionRing!: Phaser.GameObjects.Graphics;
+  private hoverRing!: Phaser.GameObjects.Graphics;
+  private selectedTile!: Phaser.GameObjects.Graphics;
   private spriteW: number;
   private spriteH: number;
+  private _selected = false;
 
   public currentHealth: number;
   public maxHealth: number;
@@ -26,6 +28,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     const spriteKey = `building_${data.building_id}`;
     this.spriteW = (IsoMath.TILE_W / GF) * data.size;
     this.spriteH = (IsoMath.TILE_H / GF) * data.size;
+
+    this.createRings(scene);
 
     try {
       this.mainSprite = scene.add.sprite(0, 0, spriteKey);
@@ -45,6 +49,46 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  private createRings(scene: Phaser.Scene) {
+    const hw = this.spriteW / 2;
+    const hh = this.spriteH / 2;
+
+    this.hoverRing = scene.add.graphics();
+    this.hoverRing.setPosition(this.x, this.y);
+    this.hoverRing.lineStyle(3, 0x00ff00, 1.0);
+    this.hoverRing.beginPath();
+    this.hoverRing.moveTo(0, -hh);
+    this.hoverRing.lineTo(hw, 0);
+    this.hoverRing.lineTo(0, hh);
+    this.hoverRing.lineTo(-hw, 0);
+    this.hoverRing.closePath();
+    this.hoverRing.strokePath();
+    this.hoverRing.setVisible(false);
+
+    this.selectedTile = scene.add.graphics();
+    this.selectedTile.setPosition(this.x, this.y);
+    this.selectedTile.fillStyle(0x00ff00, 0.25);
+    this.selectedTile.lineStyle(3, 0x00ff00, 0.6);
+    this.selectedTile.beginPath();
+    this.selectedTile.moveTo(0, -hh);
+    this.selectedTile.lineTo(hw, 0);
+    this.selectedTile.lineTo(0, hh);
+    this.selectedTile.lineTo(-hw, 0);
+    this.selectedTile.closePath();
+    this.selectedTile.fillPath();
+    this.selectedTile.strokePath();
+    this.selectedTile.setVisible(false);
+  }
+
+  set selected(value: boolean) {
+    this._selected = value;
+    this.selectedTile.setVisible(value);
+  }
+
+  get selected(): boolean {
+    return this._selected;
+  }
+
   private setupInteractions() {
     const scaledHeight = this.mainSprite ? this.mainSprite.height : this.spriteH;
 
@@ -60,12 +104,12 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
 
     this.on('pointerover', () => {
       this.scene.input.setDefaultCursor('pointer');
-      this.showSelectionRing();
+      if (!this._selected) this.hoverRing.setVisible(true);
     });
 
     this.on('pointerout', () => {
       this.scene.input.setDefaultCursor('default');
-      this.hideSelectionRing();
+      this.hoverRing.setVisible(false);
     });
 
     this.on('pointerdown', () => {
@@ -73,31 +117,6 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
         phaserEvents.onBuildingClick(this.buildingData);
       }
     });
-  }
-
-  private showSelectionRing() {
-    if (!this.selectionRing) {
-      this.selectionRing = this.scene.add.graphics();
-      this.selectionRing.setPosition(this.x, this.y);
-      this.selectionRing.lineStyle(3, 0x00ff00, 1.0);
-      this.selectionRing.fillStyle(0x00ff00, 0.2);
-
-      const hw = this.spriteW / 2;
-      const hh = this.spriteH / 2;
-
-      this.selectionRing.beginPath();
-      this.selectionRing.moveTo(0, -hh);
-      this.selectionRing.lineTo(hw, 0);
-      this.selectionRing.lineTo(0, hh);
-      this.selectionRing.lineTo(-hw, 0);
-      this.selectionRing.closePath();
-      this.selectionRing.strokePath();
-    }
-    this.selectionRing.setVisible(true);
-  }
-
-  private hideSelectionRing() {
-    if (this.selectionRing) this.selectionRing.setVisible(false);
   }
 
   public takeDamage(amount: number) {
@@ -117,6 +136,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   }
 
   private handleDestruction() {
+    this.hoverRing.destroy();
+    this.selectedTile.destroy();
     this.destroy();
   }
 }

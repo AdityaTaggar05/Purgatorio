@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { IsoMath } from './IsoMath';
 import type { BaseLayout } from '../../../types/building';
 import { BuildingSprite } from '../entities/BuildingSprite';
+import { phaserEvents } from '../events';
 
 export class LayoutEngine {
   private scene: Phaser.Scene;
@@ -14,6 +15,7 @@ export class LayoutEngine {
     this.scene = scene;
     this.buildingsLayer = this.scene.add.layer();
     this.buildingsLayer.setDepth(this.DEPTH_OFFSET);
+    phaserEvents.getActiveBuildings = () => this.activeBuildings;
   }
 
   public renderLayout(layout: BaseLayout) {

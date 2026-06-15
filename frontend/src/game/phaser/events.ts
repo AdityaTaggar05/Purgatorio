@@ -8,4 +8,5 @@ export const phaserEvents = {
   onGridClick: null as ((x: number, y: number) => void) | null,
   onBuildingClick: null as ((building: PlacedBuilding) => void) | null,
   ghostPosition: null as { x: number; y: number } | null,
+  getActiveBuildings: null as (() => import("../entities/BuildingSprite").BuildingSprite[]) | null,
 };
