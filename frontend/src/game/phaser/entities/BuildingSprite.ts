@@ -8,7 +8,7 @@ const GF = IsoMath.SUBDIVISIONS;
 
 export class BuildingSprite extends Phaser.GameObjects.Container {
   public buildingData: PlacedBuilding;
-  private mainSprite: Phaser.GameObjects.Sprite;
+  private mainSprite!: Phaser.GameObjects.Sprite;
   private hoverRing!: Phaser.GameObjects.Graphics;
   private selectedTile!: Phaser.GameObjects.Graphics;
   private upgradeIndicator!: Phaser.GameObjects.Graphics;

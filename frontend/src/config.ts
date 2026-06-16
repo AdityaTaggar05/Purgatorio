@@ -1,2 +1,2 @@
-export const API_BASE_URL = "http://localhost:8080";
-export const WS_BASE_URL = "ws://localhost:8080";
+export const API_BASE_URL = "";
+export const WS_BASE_URL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host;

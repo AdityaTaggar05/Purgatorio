@@ -1,8 +1,7 @@
 import type { ApiResponse } from "../../types/api";
 import type { LoginRequest, LoginResponse, RefreshResponse, RegisterRequest, RegisterResponse } from "./types";
 
-const API_URL =
-  "http://localhost:8080/auth";
+const API_URL = "/auth";
 
 export async function login(payload: LoginRequest): Promise<ApiResponse<LoginResponse>> {
   const response = await fetch(

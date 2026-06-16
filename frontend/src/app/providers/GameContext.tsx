@@ -23,9 +23,9 @@ export interface GameContextType {
 
 export type GameAction =
   | { type: "SET_ECONOMY"; payload: UserEconomy }
-  | { type: "SET_LAYOUT"; payload: BaseLayout }
-  | { type: "SET_TROOP_CATALOG"; payload: Troop[] }
-  | { type: "SET_ARMY"; payload: ArmyResponse }
+  | { type: "SET_LAYOUT"; payload: BaseLayout | null }
+  | { type: "SET_TROOP_CATALOG"; payload: Troop[] | null }
+  | { type: "SET_ARMY"; payload: ArmyResponse | null }
   | { type: "SET_SIN_METER"; payload: number }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }

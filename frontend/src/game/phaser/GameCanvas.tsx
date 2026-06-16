@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { TerraceScene } from './scenes/TerraceScene';
-import type { BaseLayout } from '../../../types/building';
+import type { BaseLayout } from '../../types/building';
 
 let latestLayout: BaseLayout | null = null;
 
