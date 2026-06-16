@@ -8,7 +8,7 @@ import type {
 } from "../../types/battle";
 
 export function getMatchList(api: ApiClient): Promise<ApiResponse<MatchListEntry[]>> {
-  return api.post<MatchListEntry[]>("/battle/matchlist");
+  return api.get<MatchListEntry[]>("/battle/matchlist");
 }
 
 export function initiateBattle(

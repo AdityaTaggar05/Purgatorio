@@ -28,7 +28,9 @@ export class ApiClient {
     body?: unknown,
     retried = false
   ): Promise<ApiResponse<T>> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      "Cache-Control": "no-cache",
+    };
     const token = this.getToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;

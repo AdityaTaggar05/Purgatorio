@@ -3,6 +3,22 @@ import type { ApiClient } from "../../api/client";
 import type { UserEconomy } from "../../types/economy";
 import type { BaseLayout } from "../../types/building";
 import type { Troop, ArmyResponse } from "../../types/army";
+import type { TroopDeployment } from "../../types/battle";
+
+export type BattlePhase = "matching" | "deploying" | "viewing" | "result";
+
+export interface ActiveBattle {
+  battleId: string;
+  defenderName: string;
+  defenderTerraceLevel: number;
+  phase: BattlePhase;
+  deployment: TroopDeployment[];
+  outcome?: "victory" | "defeat" | "threshold_failed";
+  destruction?: number;
+  loot?: number;
+  newSinMeter?: number;
+  duration?: number;
+}
 
 export interface GameState {
   economy: UserEconomy | null;
@@ -13,6 +29,7 @@ export interface GameState {
   isLoading: boolean;
   error: string | null;
   checkInResult: string | null;
+  activeBattle: ActiveBattle | null;
 }
 
 export interface GameContextType {
@@ -29,7 +46,8 @@ export type GameAction =
   | { type: "SET_SIN_METER"; payload: number }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
-  | { type: "SET_CHECK_IN_RESULT"; payload: string | null };
+  | { type: "SET_CHECK_IN_RESULT"; payload: string | null }
+  | { type: "SET_ACTIVE_BATTLE"; payload: ActiveBattle | null };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -55,6 +73,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, error: action.payload };
     case "SET_CHECK_IN_RESULT":
       return { ...state, checkInResult: action.payload };
+    case "SET_ACTIVE_BATTLE":
+      return { ...state, activeBattle: action.payload };
     default:
       return state;
   }
