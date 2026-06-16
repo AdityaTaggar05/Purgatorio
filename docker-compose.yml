@@ -59,5 +59,11 @@ services:
       retries: 5
     restart: unless-stopped
 
+  purg-app:
+    container_name: purg-app
+    build: ./frontend
+    ports:
+      - "80:80"
+
 volumes:
   purg_postgres_data:
