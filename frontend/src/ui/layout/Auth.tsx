@@ -13,7 +13,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[color-purgatory-bg] flex items-center justify-center">
+      <div className="min-h-screen bg-purgatory-bg flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
       </div>
     );

@@ -17,7 +17,7 @@ export default function SplashScreen() {
   }, [isLoading, user, accessToken, navigate]);
 
   return (
-    <div className="min-h-screen bg-[color-purgatory-bg] text-gray-200 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-purgatory-bg text-gray-200 flex flex-col justify-center items-center p-4 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/5 rounded-full blur-[140px] animate-pulse"></div>
       
       <div className="text-center space-y-6 relative z-10">

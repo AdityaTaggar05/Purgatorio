@@ -74,6 +74,7 @@ func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.U
 		eco.Penitence = eco.MaxPenitence
 	}
 
+	eco.CollectorResetAt = collectionTime
 	s.UserRepo.UpdateEconomy(ctx, eco)
 	s.BaseRepo.RemoveUpgradeInfo(ctx, id, model.BuildingResource)
 

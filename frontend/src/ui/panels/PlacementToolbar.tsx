@@ -5,6 +5,34 @@ import * as shopApi from "../../api/endpoints/shop";
 import * as baseApi from "../../api/endpoints/base";
 import type { ShopItem, PlacedBuilding } from "../../types/building";
 
+function UpgradeTimer({ endsAt }: { endsAt: string }) {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 500);
+    return () => clearInterval(id);
+  }, []);
+
+  const endMs = new Date(endsAt).getTime();
+  const remaining = Math.max(0, endMs - Date.now());
+  const seconds = Math.ceil(remaining / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  return (
+    <div className="mb-3 text-[10px] text-teal-400/80">
+      <div>Upgrading...</div>
+      {seconds > 0 ? (
+        <div className="font-bold text-teal-300">
+          {minutes}:{String(secs).padStart(2, "0")} remaining
+        </div>
+      ) : (
+        <div className="font-bold text-amber-400">Ready — check in!</div>
+      )}
+    </div>
+  );
+}
+
 interface PlacementToolbarProps {
   buildingMenu: PlacedBuilding | null;
   onCloseMenu: () => void;
@@ -12,7 +40,7 @@ interface PlacementToolbarProps {
 }
 
 export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutChanged }: PlacementToolbarProps) {
-  const { state, api, dispatch } = useGame();
+  const { state, api } = useGame();
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
@@ -49,7 +77,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
     phaserEvents.placementBuilding = { id: item.id, size: item.size };
     setInventoryOpen(false);
 
-    phaserEvents.onGridClick = async (x: number, y: number) => {
+    phaserEvents.onGridClick = async () => {
       const pos = phaserEvents.ghostPosition;
       if (!pos) return;
 
@@ -73,7 +101,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
     phaserEvents.mode = "place";
     phaserEvents.placementBuilding = { id: buildingMenu.building_id, size: buildingMenu.size };
 
-    phaserEvents.onGridClick = async (x: number, y: number) => {
+    phaserEvents.onGridClick = async () => {
       const pos = phaserEvents.ghostPosition;
       if (!pos) return;
 
@@ -187,16 +215,14 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
               </div>
             )}
 
-            {!buildingMenu.metadata?.upgrade_ends_at && (buildingMenu.upgrade_cost != null) && (
+            {!buildingMenu.metadata?.upgrade_ends_at && (
               <div className="mb-3 text-[10px] text-amber-500/70">
-                Next upgrade: {buildingMenu.upgrade_cost} penitence · {buildingMenu.upgrade_time}s
+                Next upgrade: {buildingMenu.upgrade_cost ?? Math.max(50, buildingMenu.level * 75)} penitence · {buildingMenu.upgrade_time ?? buildingMenu.level * 30}m
               </div>
             )}
 
             {buildingMenu.metadata?.upgrade_ends_at && (
-              <div className="mb-3 text-[10px] text-teal-400/80">
-                Upgrading... completes {new Date(buildingMenu.metadata.upgrade_ends_at).toLocaleTimeString()}
-              </div>
+              <UpgradeTimer endsAt={buildingMenu.metadata.upgrade_ends_at} />
             )}
 
             <div className="flex gap-2">
@@ -206,11 +232,11 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
               <button onClick={handleRemove} className="flex-1 px-3 py-1.5 border border-red-900/40 text-red-400 rounded text-xs uppercase tracking-wider font-bold hover:bg-red-950/20 transition-all">
                 Remove
               </button>
-              {!buildingMenu.metadata?.upgrade_ends_at && buildingMenu.upgrade_cost != null && (
+              {!buildingMenu.metadata?.upgrade_ends_at && (
                 <button
                   onClick={handleUpgrade}
                   className="flex-1 px-3 py-1.5 border border-amber-500/40 text-amber-400 rounded text-xs uppercase tracking-wider font-bold hover:bg-amber-500/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  disabled={(state.economy?.penitence ?? 0) < buildingMenu.upgrade_cost}
+                  disabled={(state.economy?.penitence ?? 0) < (buildingMenu.upgrade_cost ?? Math.max(50, buildingMenu.level * 75))}
                 >
                   Upgrade
                 </button>

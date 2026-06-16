@@ -13,6 +13,7 @@ const initialState: GameState = {
   sinMeter: 0,
   isLoading: true,
   error: null,
+  checkInResult: null,
 };
 
 let cachedTroopCatalog: Troop[] | null = null;
@@ -37,8 +38,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function hydrate() {
+      dispatch({ type: "SET_CHECK_IN_RESULT", payload: null });
+
+      const checkInRes = await api.post<{ completed_upgrades: { building_id: string; x: number; y: number; from_level: number; to_level: number }[] }>("/base/check-in");
+
       const [economyRes, layoutRes, armyRes] = await Promise.all([
-        api.get<{ penitence: number; grace: number; max_penitence: number }>("/user/economy"),
+        api.get<{ penitence: number; grace: number; max_penitence: number; overflow_penitence?: number }>("/user/economy"),
         api.get<{ buildings: unknown[]; grid_w: number; grid_h: number }>("/base/layout"),
         api.get<{ troops: Record<string, number>; used_capacity: number; max_capacity: number }>("/army/my-troops"),
       ]);
@@ -53,6 +58,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
       if (armyRes.success) {
         dispatch({ type: "SET_ARMY", payload: armyRes.data as GameState["army"] });
+      }
+
+      if (checkInRes.success && checkInRes.data.completed_upgrades.length > 0) {
+        const names = checkInRes.data.completed_upgrades
+          .map(u => `${u.building_id} Lv.${u.from_level} → ${u.to_level}`)
+          .join(", ");
+        dispatch({ type: "SET_CHECK_IN_RESULT", payload: `Upgrades completed: ${names}` });
       }
 
       if (!cachedTroopCatalog) {

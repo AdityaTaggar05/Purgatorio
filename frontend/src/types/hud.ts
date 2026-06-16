@@ -9,4 +9,6 @@ export interface HudProps {
   onLogoutClick: () => void;
   onAttackClick: () => void;
   onArmyClick: () => void;
+  onCheckInClick: () => void;
+  onCollectClick: () => void;
 }
