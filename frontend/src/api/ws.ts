@@ -1,4 +1,4 @@
-import type { TroopDeployment, TickResult, BattleResultResponse } from "../types/battle";
+import type { TroopDeployment, TickResult } from "../types/battle";
 import { WS_BASE_URL } from "../config";
 
 export interface BattleEndPayload {
@@ -13,17 +13,19 @@ type SocketState = "connecting" | "open" | "closed" | "error";
 
 type ServerMessage =
   | { type: "tick_batch"; ticks: TickResult[]; batch_start: number }
-  | { type: "battle_end" } & BattleEndPayload
+  | ({ type: "battle_end" } & BattleEndPayload)
   | { type: "error"; message: string };
 
 export class BattleSocket {
   private ws: WebSocket | null = null;
   private battleId: string;
   private _state: SocketState = "connecting";
+  private openCallbacks: Array<() => void> = [];
   private tickBatchCallbacks: Array<(ticks: TickResult[], batchStart: number) => void> = [];
   private battleEndCallbacks: Array<(result: BattleEndPayload) => void> = [];
   private errorCallbacks: Array<(message: string) => void> = [];
-  private deployTimer: ReturnType<typeof setTimeout> | null = null;
+  private deployCountdownCallbacks: Array<(seconds: number) => void> = [];
+  private deployTimer: ReturnType<typeof setInterval> | null = null;
   private _deployCountdown = 30;
 
   constructor(battleId: string) {
@@ -45,6 +47,7 @@ export class BattleSocket {
 
     this.ws.onopen = () => {
       this._state = "open";
+      this.openCallbacks.forEach((cb) => cb());
       this.startDeployCountdown();
     };
 
@@ -81,8 +84,10 @@ export class BattleSocket {
     };
 
     this.ws.onclose = () => {
-      this._state = "closed";
       this.stopDeployCountdown();
+      if (this._state !== "error") {
+        this._state = "closed";
+      }
     };
 
     this.ws.onerror = () => {
@@ -101,9 +106,13 @@ export class BattleSocket {
 
   disconnect(): void {
     this.stopDeployCountdown();
-    if (this.ws) {
+    if (this.ws && this.ws.readyState !== WebSocket.CLOSED && this.ws.readyState !== WebSocket.CLOSING) {
       this.ws.close(1000);
     }
+  }
+
+  onOpen(callback: () => void): void {
+    this.openCallbacks.push(callback);
   }
 
   onTickBatch(callback: (ticks: TickResult[], batchStart: number) => void): void {
@@ -118,13 +127,20 @@ export class BattleSocket {
     this.errorCallbacks.push(callback);
   }
 
+  onDeployCountdown(callback: (seconds: number) => void): void {
+    this.deployCountdownCallbacks.push(callback);
+  }
+
   private startDeployCountdown(): void {
     this._deployCountdown = 30;
+    this.deployCountdownCallbacks.forEach((cb) => cb(this._deployCountdown));
     this.deployTimer = setInterval(() => {
       this._deployCountdown--;
+      this.deployCountdownCallbacks.forEach((cb) => cb(this._deployCountdown));
       if (this._deployCountdown <= 0) {
         this.stopDeployCountdown();
         this.errorCallbacks.forEach((cb) => cb("Deployment timed out"));
+        this._state = "error";
         this.disconnect();
       }
     }, 1000);
