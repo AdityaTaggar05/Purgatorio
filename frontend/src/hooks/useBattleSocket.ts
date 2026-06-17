@@ -11,7 +11,7 @@ export interface UseBattleSocketResult {
   deployCountdown: number;
 }
 
-export function useBattleSocket(battleId: string): UseBattleSocketResult {
+export function useBattleSocket(battleId: string, token: string | null): UseBattleSocketResult {
   const [ticks, setTicks] = useState<TickResult[]>([]);
   const [battleResult, setBattleResult] = useState<BattleEndPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export function useBattleSocket(battleId: string): UseBattleSocketResult {
     setState("connecting");
     setDeployCountdown(30);
 
-    const socket = new BattleSocket(battleId);
+    const socket = new BattleSocket(battleId, token);
     socketRef.current = socket;
 
     socket.onOpen(() => {

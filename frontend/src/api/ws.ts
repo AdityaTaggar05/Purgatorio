@@ -19,6 +19,7 @@ type ServerMessage =
 export class BattleSocket {
   private ws: WebSocket | null = null;
   private battleId: string;
+  private token: string | null;
   private _state: SocketState = "connecting";
   private openCallbacks: Array<() => void> = [];
   private tickBatchCallbacks: Array<(ticks: TickResult[], batchStart: number) => void> = [];
@@ -28,8 +29,9 @@ export class BattleSocket {
   private deployTimer: ReturnType<typeof setInterval> | null = null;
   private _deployCountdown = 30;
 
-  constructor(battleId: string) {
+  constructor(battleId: string, token: string | null) {
     this.battleId = battleId;
+    this.token = token;
   }
 
   get state(): SocketState {
@@ -42,7 +44,8 @@ export class BattleSocket {
 
   connect(): void {
     this._state = "connecting";
-    const url = `${WS_BASE_URL}/battle/${this.battleId}/ws`;
+    const query = this.token ? `?token=${encodeURIComponent(this.token)}` : "";
+    const url = `${WS_BASE_URL}/battle/${this.battleId}/ws${query}`;
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {

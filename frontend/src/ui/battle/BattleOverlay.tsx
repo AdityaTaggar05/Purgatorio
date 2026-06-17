@@ -5,6 +5,7 @@ import type { ActiveBattle } from "../../app/providers/GameContext";
 import DeploymentScreen from "../panels/DeploymentScreen";
 import BattleViewer from "../panels/BattleViewer";
 import BattleResultScreen from "../panels/BattleResultScreen";
+import { useAuth } from "../../hooks/useAuth";
 
 interface BattleOverlayProps {
   battle: ActiveBattle;
@@ -12,8 +13,8 @@ interface BattleOverlayProps {
 
 export default function BattleOverlay({ battle }: BattleOverlayProps) {
   const { dispatch } = useGame();
-
-  const socket = useBattleSocket(battle.battleId);
+  const { accessToken } = useAuth()
+  const socket = useBattleSocket(battle.battleId, accessToken);
 
   useEffect(() => {
     if (socket.battleResult && battle.phase === "viewing") {
