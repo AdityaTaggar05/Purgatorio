@@ -209,8 +209,8 @@ func (s *BattleService) PrepareSimulation(ctx context.Context, battleID, userID 
 		Deployments: deployments,
 		Buildings:   buildings,
 		Catalog:     s.Catalog,
-		TicksPerSec: 10,
-		MaxDuration: 6000,
+		TicksPerSec: 20,
+		MaxDuration: 3600,
 	}
 
 	return engine.NewSimulation(input), nil
@@ -320,7 +320,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 func (s *BattleService) GetReplay(ctx context.Context, battleID uuid.UUID) (*model.ReplaySimResult, error) {
 	replay, err := s.BattleRepo.GetReplay(ctx, battleID)
 	if err != nil {
-		return nil, purgerr.Wrap(fmt.Errorf("replay not found"), err)
+		return nil, purgerr.Wrap(ErrReplayNotFound, err)
 	}
 
 	buildings, err := s.BattleRepo.GetBaseSnapshot(ctx, replay.Data.BaseSnapshotID)

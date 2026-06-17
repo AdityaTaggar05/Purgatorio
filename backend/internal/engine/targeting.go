@@ -35,9 +35,6 @@ func findNearestBuildingForTroop(t *troopState, buildings []*buildingState) *bui
 			nearestDist = dist
 		}
 	}
-	if t.range_ > 0 && nearestDist > t.range_ {
-		return nil
-	}
 	return nearest
 }
 

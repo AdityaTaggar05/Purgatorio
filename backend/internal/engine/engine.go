@@ -28,6 +28,16 @@ type Simulation struct {
 func NewSimulation(input BattleInput) *Simulation {
 	rng := rand.New(rand.NewSource(input.Seed))
 
+	ticksPerSec := input.TicksPerSec
+	if ticksPerSec <= 0 {
+		ticksPerSec = 20
+	}
+
+	maxTick := input.MaxDuration
+	if maxTick <= 0 {
+		maxTick = 180 * ticksPerSec
+	}
+
 	sim := &Simulation{
 		rng:         rng,
 		maxTick:     input.MaxDuration,
@@ -46,15 +56,15 @@ func NewSimulation(input BattleInput) *Simulation {
 			sim.idSeq++
 			id := fmt.Sprintf("t%d", sim.idSeq)
 			sim.troops = append(sim.troops, &troopState{
-				id:       id,
+				id:        id,
 				troopType: dep.TroopType,
-				hp:       float64(stats.HP),
-				maxHP:    stats.HP,
-				dps:      stats.DPS,
-				speed:    stats.Speed,
-				range_:   stats.Range,
-				pos:      dep.Position,
-				alive:    true,
+				hp:        float64(stats.HP),
+				maxHP:     stats.HP,
+				dps:       stats.DPS,
+				speed:     stats.Speed,
+				range_:    stats.Range,
+				pos:       dep.Position,
+				alive:     true,
 			})
 			sim.initHP[id] = stats.HP
 		}
