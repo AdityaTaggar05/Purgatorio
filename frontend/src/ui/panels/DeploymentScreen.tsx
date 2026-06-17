@@ -49,9 +49,6 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
   const [selectedTroop, setSelectedTroop] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
 
-  // The backend doesn't currently expose the defender's building layout via
-  // the matchlist/initiate endpoints, so there's nothing to render here yet.
-  // Once a "defender base snapshot" endpoint exists, populate this from it.
   const defenderBuildings: PlacedBuilding[] = useMemo(() => [], []);
 
   const deployedMap = useMemo(() => {
