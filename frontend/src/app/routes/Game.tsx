@@ -6,6 +6,7 @@ import GameHud from '../../ui/layout/GameHud';
 import ShopPanel from '../../ui/panels/ShopPanel';
 import ArmyPanel from '../../ui/panels/ArmyPanel';
 import MatchmakingPanel from '../../ui/panels/MatchmakingPanel';
+import BattleOverlay from '../../ui/battle/BattleOverlay';
 import PlacementToolbar from '../../ui/panels/PlacementToolbar';
 import UpgradeSnackbar from '../../ui/panels/UpgradeSnackbar';
 import { phaserEvents } from '../../game/phaser/events';
@@ -97,6 +98,8 @@ export default function GameDashboard() {
       <ShopPanel open={shopOpen} onClose={() => setShopOpen(false)} />
       <ArmyPanel open={armyOpen} onClose={() => setArmyOpen(false)} />
       <MatchmakingPanel open={matchmakingOpen} onClose={() => setMatchmakingOpen(false)} />
+
+      {state.activeBattle && <BattleOverlay battle={state.activeBattle} />}
 
       <PlacementToolbar
         buildingMenu={buildingMenu}
