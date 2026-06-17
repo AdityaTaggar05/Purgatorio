@@ -14,12 +14,12 @@ import (
 )
 
 type BattleService struct {
-	BattleRepo    repository.BattleRepository
-	UserRepo      repository.UserRepository
-	ArmyRepo      repository.ArmyRepository
+	BattleRepo     repository.BattleRepository
+	UserRepo       repository.UserRepository
+	ArmyRepo       repository.ArmyRepository
 	BaseLayoutRepo repository.BaseLayoutRepository
-	ShopRepo      repository.ShopRepository
-	Catalog       engine.TroopCatalog
+	ShopRepo       repository.ShopRepository
+	Catalog        engine.TroopCatalog
 }
 
 func NewBattleService(
@@ -43,12 +43,12 @@ func NewBattleService(
 	}
 
 	return &BattleService{
-		BattleRepo:    battleRepo,
-		UserRepo:      userRepo,
-		ArmyRepo:      armyRepo,
+		BattleRepo:     battleRepo,
+		UserRepo:       userRepo,
+		ArmyRepo:       armyRepo,
 		BaseLayoutRepo: baseLayoutRepo,
-		ShopRepo:      shopRepo,
-		Catalog:       catalog,
+		ShopRepo:       shopRepo,
+		Catalog:        catalog,
 	}
 }
 
@@ -255,7 +255,8 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		return nil, purgerr.Wrap(fmt.Errorf("failed to update attacker combat"), err)
 	}
 
-	if finalOutcome == engine.Victory {
+	switch finalOutcome {
+	case engine.Victory:
 		if err := s.BattleRepo.DeductDefenderPenitence(ctx, battle.DefenderID, loot); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to deduct defender penitence"), err)
 		}
@@ -274,14 +275,14 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		if err := s.BattleRepo.SetShield(ctx, battle.DefenderID, shieldExpires); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to set defender shield"), err)
 		}
-	} else if finalOutcome == engine.Defeat {
+	case engine.Defeat:
 		if err := s.BattleRepo.IncrementUserStats(ctx, battle.AttackerID, true, false); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment attacker stats"), err)
 		}
 		if err := s.BattleRepo.IncrementUserStats(ctx, battle.DefenderID, false, true); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment defender stats"), err)
 		}
-	} else {
+	default:
 		if err := s.BattleRepo.IncrementUserStats(ctx, battle.AttackerID, true, false); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment attacker stats"), err)
 		}
@@ -359,10 +360,7 @@ func resolveSinMeter(result engine.BattleResult, currentSin int) (engine.BattleO
 	}
 
 	if result.Destruction > float64(currentSin) {
-		newSin := currentSin + 10
-		if newSin > 100 {
-			newSin = 100
-		}
+		newSin := min(currentSin+10, 100)
 		return engine.Victory, newSin
 	}
 
