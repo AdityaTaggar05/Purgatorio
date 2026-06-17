@@ -14,6 +14,7 @@ const initialState: GameState = {
   isLoading: true,
   error: null,
   checkInResult: null,
+  activeBattle: null,
 };
 
 let cachedTroopCatalog: Troop[] | null = null;

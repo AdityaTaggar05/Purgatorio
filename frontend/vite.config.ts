@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 // In dev, proxy them straight to the locally-running backend (e.g. via
 // `docker compose up purg-backend`, which publishes 8080:8080).
 const BACKEND_URL = "http://localhost:8080";
-const API_PREFIXES = ["/auth", "/user", "/base", "/shop", "/army"];
+const API_PREFIXES = ["/auth", "/user", "/base", "/shop", "/army", "/battle"];
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
