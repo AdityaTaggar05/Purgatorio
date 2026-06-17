@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { BattleSocket, type BattleEndPayload } from "../api/ws";
 import type { TroopDeployment, TickResult } from "../types/battle";
 
-interface UseBattleSocketResult {
+export interface UseBattleSocketResult {
   sendDeploy: (deployment: TroopDeployment[]) => void;
   ticks: TickResult[];
   battleResult: BattleEndPayload | null;
@@ -18,10 +18,26 @@ export function useBattleSocket(battleId: string): UseBattleSocketResult {
   const [state, setState] = useState<UseBattleSocketResult["state"]>("connecting");
   const [deployCountdown, setDeployCountdown] = useState(30);
   const socketRef = useRef<BattleSocket | null>(null);
+  const deployedRef = useRef(false);
 
   useEffect(() => {
+    deployedRef.current = false;
+    setTicks([]);
+    setBattleResult(null);
+    setError(null);
+    setState("connecting");
+    setDeployCountdown(30);
+
     const socket = new BattleSocket(battleId);
     socketRef.current = socket;
+
+    socket.onOpen(() => {
+      if (!deployedRef.current) setState("open");
+    });
+
+    socket.onDeployCountdown((seconds) => {
+      setDeployCountdown(seconds);
+    });
 
     socket.onTickBatch((incomingTicks) => {
       setTicks((prev) => [...prev, ...incomingTicks]);
@@ -37,25 +53,16 @@ export function useBattleSocket(battleId: string): UseBattleSocketResult {
       setState("error");
     });
 
-    const countdownInterval = setInterval(() => {
-      if (socket.state === "open") {
-        setDeployCountdown(socket.deployCountdown);
-      }
-      if (socket.state === "open" && !battleResult) {
-        setState("open");
-      }
-    }, 500);
-
     socket.connect();
 
     return () => {
-      clearInterval(countdownInterval);
       socket.disconnect();
     };
   }, [battleId]);
 
   const sendDeploy = useCallback(
     (deployment: TroopDeployment[]) => {
+      deployedRef.current = true;
       socketRef.current?.sendDeploy(deployment);
       setState("deployed");
     },
