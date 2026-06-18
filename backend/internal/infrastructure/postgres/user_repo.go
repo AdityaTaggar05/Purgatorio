@@ -138,7 +138,7 @@ func (r *UserRepository) InitializeNewUser(ctx context.Context, userID uuid.UUID
 	}
 
 	_, err = tx.Exec(ctx,
-		`INSERT INTO user_army (user_id, max_capacity) VALUES ($1, 50)`, userID,
+		`INSERT INTO user_army (user_id, troops, used_capacity, max_capacity) VALUES ($1, '{}'::jsonb, 0, 50)`, userID,
 	)
 	if err != nil {
 		return err
