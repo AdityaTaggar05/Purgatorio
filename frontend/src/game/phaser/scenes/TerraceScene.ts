@@ -5,6 +5,7 @@ import { CameraManager } from "../managers/CameraManager";
 import { IsoMath } from "../managers/IsoMath";
 import { LayoutEngine } from "../managers/LayoutEngine";
 import { TerrainEngine } from "../managers/TerrainEngine";
+import { preloadBuildingAssets } from "../assetManifest";
 
 export class TerraceScene extends Phaser.Scene {
   static SUBGRID_LAYER = "subgrid";
@@ -18,14 +19,7 @@ export class TerraceScene extends Phaser.Scene {
   private subgridDrawn = false;
 
   preload() {
-    this.load.image('ground-tile', '/assets/ground-tile.png');
-    this.load.image('ground-tile-edge', '/assets/ground-tile-edge.png');
-
-    this.load.image('building_bastion', '/assets/bastion.png');
-    this.load.image('building_angel-spire', '/assets/angel-spire.png');
-    this.load.image('building_lament-basin', '/assets/lament-basin.png');
-    this.load.image('building_barracks', '/assets/barracks.png');
-    this.load.image('building_sanctum', '/assets/sanctum.png');
+    preloadBuildingAssets(this.load);
   }
 
   create() {
