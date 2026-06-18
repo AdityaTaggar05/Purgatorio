@@ -68,6 +68,7 @@ func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.U
 	}
 
 	eco.Penitence += collectedAmt + eco.CollectorPendingPenitence
+	eco.CollectorPendingPenitence = 0
 
 	if eco.Penitence > eco.MaxPenitence {
 		eco.CollectorPendingPenitence = eco.Penitence - eco.MaxPenitence
