@@ -8,18 +8,28 @@ export class LayoutEngine {
   private scene: Phaser.Scene;
   private buildingsLayer!: Phaser.GameObjects.Layer;
   public activeBuildings: BuildingSprite[] = [];
+  private interactive: boolean;
 
   private DEPTH_OFFSET = 100;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, interactive = true) {
     this.scene = scene;
+    this.interactive = interactive;
     this.buildingsLayer = this.scene.add.layer();
     this.buildingsLayer.setDepth(this.DEPTH_OFFSET);
-    phaserEvents.getActiveBuildings = () => this.activeBuildings;
+
+    if (this.interactive) {
+      phaserEvents.getActiveBuildings = () => this.activeBuildings;
+    }
   }
 
   public renderLayout(layout: BaseLayout) {
     this.clearBuildings();
+
+    // Recreate the layer to ensure no stale object references
+    this.buildingsLayer.destroy();
+    this.buildingsLayer = this.scene.add.layer();
+    this.buildingsLayer.setDepth(this.DEPTH_OFFSET);
 
     layout.buildings.forEach((building) => {
       const screenPos = IsoMath.subgridToScreen(
@@ -32,7 +42,8 @@ export class LayoutEngine {
         this.scene,
         screenPos.x,
         screenPos.y,
-        building
+        building,
+        this.interactive
       );
 
       buildingInstance.setDepth(screenPos.y + this.DEPTH_OFFSET);
@@ -43,7 +54,7 @@ export class LayoutEngine {
   }
 
   public clearBuildings() {
+    this.activeBuildings.forEach(s => s.destroy(true));
     this.activeBuildings = [];
-    this.buildingsLayer.removeAll(true);
   }
 }

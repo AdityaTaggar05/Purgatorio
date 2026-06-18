@@ -54,7 +54,10 @@ export default function BattleGrid({
   };
 
   return (
-    <div className="relative inline-block bg-black/60 border border-purgatory-border rounded overflow-hidden">
+    <div 
+      className="relative inline-block bg-black/60 border border-purgatory-border rounded overflow-hidden"
+      style={{ width: gridW * cellSize, height: gridH * cellSize }}
+    >
       <div className="absolute inset-0 grid" style={{
         gridTemplateColumns: `repeat(${gridW}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${gridH}, ${cellSize}px)`,

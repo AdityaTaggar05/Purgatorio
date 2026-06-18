@@ -1,18 +1,16 @@
 import { useState, useMemo } from "react";
 import { useGame } from "../../hooks/useGame";
-import BattleGrid from "../battle/BattleGrid";
-import TroopStackOverlay, { type TroopStack } from "../battle/TroopStackOverlay";
 import type { TroopDeployment } from "../../types/battle";
-import type { PlacedBuilding } from "../../types/building";
 import type { ActiveBattle } from "../../app/providers/GameContext";
 import type { UseBattleSocketResult } from "../../hooks/useBattleSocket";
+import type { TroopStack } from "../battle/TroopStackOverlay";
+import BattleCanvas from "../../game/phaser/BattleCanvas";
 
 interface DeploymentScreenProps {
   battle: ActiveBattle;
   socket: UseBattleSocketResult;
 }
 
-const CELL_SIZE = 14;
 const GRID_SIZE = 30;
 
 function TroopThumb({ troopType }: { troopType: string }) {
@@ -48,8 +46,6 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
   const [deployments, setDeployments] = useState<TroopDeployment[]>([]);
   const [selectedTroop, setSelectedTroop] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
-
-  const defenderBuildings: PlacedBuilding[] = useMemo(() => [], []);
 
   const deployedMap = useMemo(() => {
     const cells = new Map<string, TroopDeployment>();
@@ -240,19 +236,18 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
             )}
           </div>
 
-          <div className="flex-1 flex items-center justify-center overflow-auto">
-            <div className="relative" style={{ width: GRID_SIZE * CELL_SIZE, height: GRID_SIZE * CELL_SIZE }}>
-              <BattleGrid
-                buildings={defenderBuildings}
-                gridW={GRID_SIZE}
-                gridH={GRID_SIZE}
-                cellSize={CELL_SIZE}
-                deploymentZone={deploymentZone}
-                selectedCells={selectedCells}
-                onCellClick={canDeploy ? handleCellClick : undefined}
-              />
-              <TroopStackOverlay stacks={previewStacks} cellSize={CELL_SIZE} staticPreview />
-            </div>
+          <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+            <BattleCanvas
+              layout={battle.defenderLayout}
+              stacks={previewStacks}
+              deploymentZone={deploymentZone}
+              selectedCells={selectedCells}
+              troopCatalogIds={catalog.map((t) => t.id)}
+              interactiveDeployment={canDeploy}
+              selectedTroop={selectedTroop}
+              staticPreview
+              onCellClick={canDeploy ? handleCellClick : undefined}
+            />
           </div>
 
           <div className="w-48 shrink-0 flex flex-col gap-2 overflow-y-auto">
