@@ -60,42 +60,49 @@ func (s *BattleService) GetMatchList(ctx context.Context, userID uuid.UUID) ([]m
 	return s.BattleRepo.GetMatchList(ctx, user.TerraceLevel, userID)
 }
 
-func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defenderID uuid.UUID) (uuid.UUID, string, error) {
+type InitiateBattleResult struct {
+	BattleID      uuid.UUID
+	DefenderName  string
+	TerraceLevel  int
+	Buildings     []engine.BuildingSnapshot
+}
+
+func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defenderID uuid.UUID) (*InitiateBattleResult, error) {
 	if attackerID == defenderID {
-		return uuid.Nil, "", purgerr.Wrap(ErrCannotAttackSelf, ErrCannotAttackSelf)
+		return nil, purgerr.Wrap(ErrCannotAttackSelf, ErrCannotAttackSelf)
 	}
 
 	attacker, err := s.UserRepo.GetUserByID(ctx, attackerID)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(ErrUserNotFound, err)
+		return nil, purgerr.Wrap(ErrUserNotFound, err)
 	}
 
 	defender, err := s.UserRepo.GetUserByID(ctx, defenderID)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(ErrDefenderNotFound, err)
+		return nil, purgerr.Wrap(ErrDefenderNotFound, err)
 	}
 
 	if attacker.TerraceLevel != defender.TerraceLevel {
-		return uuid.Nil, "", purgerr.Wrap(ErrTerraceLevelMismatch, ErrTerraceLevelMismatch)
+		return nil, purgerr.Wrap(ErrTerraceLevelMismatch, ErrTerraceLevelMismatch)
 	}
 
 	defenderCombat, err := s.BattleRepo.GetUserCombat(ctx, defenderID)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to get defender combat state"), err)
+		return nil, purgerr.Wrap(fmt.Errorf("failed to get defender combat state"), err)
 	}
 
 	if defenderCombat.ShieldExpiresAt != nil && time.Now().Before(*defenderCombat.ShieldExpiresAt) {
-		return uuid.Nil, "", purgerr.Wrap(ErrDefenderShieldActive, ErrDefenderShieldActive)
+		return nil, purgerr.Wrap(ErrDefenderShieldActive, ErrDefenderShieldActive)
 	}
 
 	buildings, err := s.snapshotDefenderBase(ctx, defenderID)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to snapshot defender base"), err)
+		return nil, purgerr.Wrap(fmt.Errorf("failed to snapshot defender base"), err)
 	}
 
 	snapshotID, err := s.BattleRepo.CreateBaseSnapshot(ctx, defenderID, buildings)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to create base snapshot"), err)
+		return nil, purgerr.Wrap(fmt.Errorf("failed to create base snapshot"), err)
 	}
 
 	battle := model.Battle{
@@ -108,10 +115,15 @@ func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defender
 
 	battleID, err := s.BattleRepo.CreateBattle(ctx, battle)
 	if err != nil {
-		return uuid.Nil, "", purgerr.Wrap(fmt.Errorf("failed to create battle"), err)
+		return nil, purgerr.Wrap(fmt.Errorf("failed to create battle"), err)
 	}
 
-	return battleID, defender.Username, nil
+	return &InitiateBattleResult{
+		BattleID:     battleID,
+		DefenderName: defender.Username,
+		TerraceLevel: defender.TerraceLevel,
+		Buildings:    buildings,
+	}, nil
 }
 
 func (s *BattleService) snapshotDefenderBase(ctx context.Context, userID uuid.UUID) ([]engine.BuildingSnapshot, error) {
