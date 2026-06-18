@@ -1,7 +1,9 @@
 import type Phaser from 'phaser';
 
 export const BUILDING_ASSETS: Record<string, string> = {
-  bastion: '/assets/bastion.png',
+  'bastion-edge-right': '/assets/bastion-edge-right.png',
+  'bastion-edge-left': '/assets/bastion-edge-left.png',
+  'bastion-corner': '/assets/bastion-corner.png',
   'angel-spire': '/assets/angel-spire.png',
   'lament-basin': '/assets/lament-basin.png',
   barracks: '/assets/barracks.png',

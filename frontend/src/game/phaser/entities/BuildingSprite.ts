@@ -29,7 +29,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     this.maxHealth = data.hp ?? data.size * 500;
     this.currentHealth = this.maxHealth;
 
-    const spriteKey = `building_${data.building_id}`;
+    const overrideKey = (data.metadata as Record<string, unknown> | undefined)?.['sprite_key'] as string | undefined;
+    const spriteKey = overrideKey ?? `building_${data.building_id}`;
     this.spriteW = (IsoMath.TILE_W / GF) * data.size;
     this.spriteH = (IsoMath.TILE_H / GF) * data.size;
 

@@ -1,8 +1,37 @@
 import Phaser from 'phaser';
 import { IsoMath } from './IsoMath';
-import type { BaseLayout } from '../../../types/building';
+import type { BaseLayout, PlacedBuilding } from '../../../types/building';
 import { BuildingSprite } from '../entities/BuildingSprite';
 import { phaserEvents } from '../events';
+
+function computeBastionEdges(layout: BaseLayout): Map<string, string | null> {
+  const bastions = layout.buildings.filter(b => b.building_id === 'bastion');
+  const byKey = new Map<string, PlacedBuilding>();
+  for (const b of bastions) {
+    byKey.set(`${b.x},${b.y}`, b);
+  }
+
+  const result = new Map<string, string | null>();
+  if (bastions.length === 0) return result;
+
+  for (const b of bastions) {
+    const key = `${b.x},${b.y}`;
+    const dx = byKey.has(`${b.x + 1},${b.y}`) ? 1 : byKey.has(`${b.x - 1},${b.y}`) ? -1 : 0;
+    const dy = byKey.has(`${b.x},${b.y + 1}`) ? 1 : byKey.has(`${b.x},${b.y - 1}`) ? -1 : 0;
+
+    console.log(key, dx, dy)
+
+    if (dx === 0 && dy === 0) {
+      result.set(key, 'building_bastion-corner');
+    } else if (dx !== 0) {
+      result.set(key, 'building_bastion-edge-left');
+    } else {
+      result.set(key, 'building_bastion-edge-right');
+    }
+  }
+
+  return result;
+}
 
 export class LayoutEngine {
   private scene: Phaser.Scene;
@@ -31,6 +60,8 @@ export class LayoutEngine {
     this.buildingsLayer = this.scene.add.layer();
     this.buildingsLayer.setDepth(this.DEPTH_OFFSET);
 
+    const edges = computeBastionEdges(layout);
+
     layout.buildings.forEach((building) => {
       const screenPos = IsoMath.subgridToScreen(
         building.x,
@@ -38,11 +69,17 @@ export class LayoutEngine {
         building.size
       );
 
+      const key = `${building.x},${building.y}`;
+      const spriteOverride = edges.get(key) ?? null;
+      const buildingData = spriteOverride
+        ? { ...building, metadata: { ...building.metadata, sprite_key: spriteOverride } }
+        : building;
+
       const buildingInstance = new BuildingSprite(
         this.scene,
         screenPos.x,
         screenPos.y,
-        building,
+        buildingData,
         this.interactive
       );
 
