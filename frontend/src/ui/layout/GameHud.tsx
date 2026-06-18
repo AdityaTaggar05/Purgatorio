@@ -122,7 +122,7 @@ export default function GameHud({
           {/* Collect Resources Button */}
           <button
             onClick={onCollectClick}
-            title="Collect Tribute"
+            title={economy?.overflow_penitence ? `Uncollected: ${economy.overflow_penitence} penitence` : "Collect Tribute"}
             className="flex items-center justify-center w-10 h-10 bg-purgatory-card border border-purple-900/40 hover:border-purple-500/60 text-gray-500 hover:text-purple-400 rounded cursor-pointer transition-colors shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
