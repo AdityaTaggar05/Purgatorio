@@ -64,6 +64,31 @@ export default function ArmyPanel({ open, onClose }: ArmyPanelProps) {
     }
   };
 
+  const handleDetrain = async (troopId: string) => {
+    const count = trainCounts[troopId] ?? 1;
+    setError(null);
+    setTraining(troopId);
+    try {
+      const res = await armyApi.detrainTroop(api, troopId, count);
+      if (res.success) {
+        const armyRes = await armyApi.getMyTroops(api);
+        if (armyRes.success) {
+          setArmy(armyRes.data);
+          dispatch({ type: "SET_ARMY", payload: armyRes.data });
+        }
+
+        const econRes = await api.get<{ penitence: number; grace: number; max_penitence: number }>("/user/economy");
+        if (econRes.success) {
+          dispatch({ type: "SET_ECONOMY", payload: econRes.data });
+        }
+      } else {
+        setError(res.error?.message ?? "Detraining failed");
+      }
+    } finally {
+      setTraining(null);
+    }
+  };
+
   const decrementCount = (troopId: string) => {
     setTrainCounts(prev => {
       const v = Math.max(1, (prev[troopId] ?? 1) - 1);
@@ -214,6 +239,24 @@ export default function ArmyPanel({ open, onClose }: ArmyPanelProps) {
                             <>Train · {totalCost}</>
                           )}
                         </button>
+                        {owned >= count && (
+                          <button
+                            onClick={() => handleDetrain(troop.id)}
+                            disabled={training !== null}
+                            className="text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded border transition-all
+                              border-red-900/40 text-red-400 hover:bg-red-900/20 hover:border-red-600/60
+                              disabled:border-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed"
+                          >
+                            {training === troop.id ? (
+                              <span className="flex items-center justify-center gap-1">
+                                <span className="w-3 h-3 border border-red-400/30 border-t-red-400 rounded-full animate-spin inline-block" />
+                                ...
+                              </span>
+                            ) : (
+                              <>Detrain · {count}</>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
