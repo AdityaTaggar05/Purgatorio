@@ -135,8 +135,7 @@ frontend/
 │       ├── battle/             # Battle overlay (deployment, playback, HUD)
 │       ├── economy/            # Resource views
 │       ├── army/               # Army management (train, detrain, barracks)
-│       ├── panels/             # Reusable panels (DeploymentScreen, BattleResultScreen)
-│       └── profile/            # Profile + search + attack views
+└       ├── panels/             # Reusable panels (DeploymentScreen, BattleResultScreen)
 ```
 
 ### Key Frontend Flows
