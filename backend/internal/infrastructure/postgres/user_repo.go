@@ -258,9 +258,18 @@ func (r *UserRepository) GetCombat(ctx context.Context, id uuid.UUID) (model.Use
 	var c model.UserCombat
 	c.UserID = id
 	err := r.DB.QueryRow(ctx,
-		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration
+		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration, updated_at
 		 FROM user_combat WHERE user_id = $1`,
 		id,
-	).Scan(&c.SinMeter, &c.LastAttackAt, &c.ShieldExpiresAt, &c.ShieldMaxDuration)
+	).Scan(&c.SinMeter, &c.LastAttackAt, &c.ShieldExpiresAt, &c.ShieldMaxDuration, &c.UpdatedAt)
 	return c, err
+}
+
+func (r *UserRepository) UpdateCombat(ctx context.Context, userID uuid.UUID, sinMeter int) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE user_combat SET sin_meter = $2, updated_at = now()
+		 WHERE user_id = $1`,
+		userID, sinMeter,
+	)
+	return err
 }

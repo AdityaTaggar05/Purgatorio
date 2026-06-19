@@ -87,3 +87,16 @@ func (r *ArmyRepository) AddTroops(ctx context.Context, userID uuid.UUID, troopI
 	)
 	return err
 }
+
+func (r *ArmyRepository) RemoveTroops(ctx context.Context, userID uuid.UUID, troopID string, count, usedCapacity int) error {
+	_, err := r.DB.Exec(ctx,
+		`UPDATE user_army
+		 SET troops = jsonb_set(troops, ARRAY[$2],
+		     to_jsonb(GREATEST(COALESCE((troops->>$2)::int, 0) - $3, 0))),
+		     used_capacity = $4,
+		     updated_at = now()
+		 WHERE user_id = $1`,
+		userID, troopID, count, usedCapacity,
+	)
+	return err
+}

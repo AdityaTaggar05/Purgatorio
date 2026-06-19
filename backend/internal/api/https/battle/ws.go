@@ -119,7 +119,34 @@ func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) 
 
 	conn.SetReadDeadline(time.Time{})
 
+	// Listen for "skip" messages while streaming ticks
+	skipChan := make(chan struct{}, 1)
+	skipTick := 0
+	go func() {
+		for {
+			var msg wsClientMsg
+			if err := conn.ReadJSON(&msg); err != nil {
+				return
+			}
+			if msg.Type == "skip" {
+				select {
+				case skipChan <- struct{}{}:
+				default:
+				}
+				return
+			}
+		}
+	}()
+
+streamLoop:
 	for batchIdx, batch := range tickBatches {
+		select {
+		case <-skipChan:
+			skipTick = batchIdx * batchSize
+			break streamLoop
+		default:
+		}
+
 		batchStart := batchIdx * batchSize
 		err = conn.WriteJSON(wsServerMsg{
 			Type:       "tick_batch",
@@ -130,11 +157,16 @@ func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) 
 			h.Logger.Error("failed to write tick batch", "error", err)
 			return
 		}
-		
-		time.Sleep(500 * time.Millisecond)
+
+		select {
+		case <-skipChan:
+			skipTick = (batchIdx + 1) * batchSize
+			break streamLoop
+		case <-time.After(500 * time.Millisecond):
+		}
 	}
 
-	outcome, err := h.Service.ResolveAndStore(r.Context(), battleID, sim, deployments)
+	outcome, err := h.Service.ResolveAndStore(r.Context(), battleID, sim, deployments, skipTick)
 	if err != nil {
 		conn.WriteJSON(wsServerMsg{Type: "error", Message: "failed to store battle result"})
 		return

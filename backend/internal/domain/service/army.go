@@ -49,6 +49,55 @@ func (s *ArmyService) GetMyTroops(ctx context.Context, userID uuid.UUID) (*model
 	}, nil
 }
 
+func (s *ArmyService) DetrainTroops(ctx context.Context, userID uuid.UUID, troopID string, count int) error {
+	if count <= 0 {
+		return purgerr.Wrap(fmt.Errorf("count must be positive"), fmt.Errorf("count must be positive"))
+	}
+
+	troop, err := s.ArmyRepo.GetTroopByID(ctx, troopID)
+	if err != nil {
+		return purgerr.Wrap(ErrTroopNotFound, err)
+	}
+
+	userArmy, err := s.ArmyRepo.GetUserArmy(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrInsufficientTroops, err)
+	}
+
+	owned := userArmy.Troops[troopID]
+	if owned < count {
+		return purgerr.Wrap(ErrInsufficientTroops, fmt.Errorf("owned %d, tried to detrain %d", owned, count))
+	}
+
+	newUsed := userArmy.UsedCapacity - count*troop.Space
+	if newUsed < 0 {
+		newUsed = 0
+	}
+
+	// Refund 50% of training cost
+	eco, err := s.UserRepo.GetEconomy(ctx, userID)
+	if err != nil {
+		return purgerr.Wrap(ErrUserNotFound, err)
+	}
+
+	refund := (troop.TrainingCost * count) / 2
+	eco.Penitence += refund
+	if eco.Penitence > eco.MaxPenitence {
+		eco.CollectorPendingPenitence += eco.Penitence - eco.MaxPenitence
+		eco.Penitence = eco.MaxPenitence
+	}
+
+	if err := s.UserRepo.UpdateEconomy(ctx, eco); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to refund detrain cost"), err)
+	}
+
+	if err := s.ArmyRepo.RemoveTroops(ctx, userID, troopID, count, newUsed); err != nil {
+		return purgerr.Wrap(fmt.Errorf("failed to remove troops"), err)
+	}
+
+	return nil
+}
+
 func (s *ArmyService) getMaxCapacity(ctx context.Context, userID uuid.UUID) int {
 	maxCapacity := 0
 	placed, err := s.BaseLayoutRepo.GetLayout(ctx, userID)

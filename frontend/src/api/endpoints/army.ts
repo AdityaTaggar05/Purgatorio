@@ -13,3 +13,7 @@ export function getMyTroops(api: ApiClient): Promise<ApiResponse<ArmyResponse>> 
 export function trainTroop(api: ApiClient, troopId: string, count: number): Promise<ApiResponse<ArmyResponse>> {
   return api.post<ArmyResponse>("/army/train", { troop_id: troopId, count });
 }
+
+export function detrainTroop(api: ApiClient, troopId: string, count: number): Promise<ApiResponse<ArmyResponse>> {
+  return api.post<ArmyResponse>("/army/detrain", { troop_id: troopId, count });
+}

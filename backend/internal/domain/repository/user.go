@@ -27,6 +27,7 @@ type UserRepository interface {
 
 	// Combat Functions
 	GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error)
+	UpdateCombat(ctx context.Context, userID uuid.UUID, sinMeter int) error
 
 	// Progression
 	UpdateTerraceLevel(ctx context.Context, id uuid.UUID, level int) error

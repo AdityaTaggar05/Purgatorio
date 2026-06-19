@@ -26,6 +26,7 @@ type UserCombat struct {
 	LastAttackAt      *time.Time
 	ShieldExpiresAt   *time.Time
 	ShieldMaxDuration int
+	UpdatedAt         *time.Time
 }
 
 type BattleReplay struct {
@@ -40,6 +41,7 @@ type ReplayData struct {
 	Deployment     []engine.TroopDeployment `json:"deployment"`
 	Seed           int64                    `json:"seed"`
 	BaseSnapshotID uuid.UUID                `json:"base_snapshot_id"`
+	EndTick        int                      `json:"end_tick,omitempty"` // 0 = full replay
 }
 
 type MatchPlayer struct {

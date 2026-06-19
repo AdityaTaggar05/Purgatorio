@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const sinDrainPerMinute = 1.0 / 6.0 // 10% per hour; 100 → 0 in ~10 hours
+
 type UserService struct {
 	UserRepo repository.UserRepository
 	BaseRepo repository.BaseRepository
@@ -34,7 +36,22 @@ func (s *UserService) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserE
 }
 
 func (s *UserService) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error) {
-	return s.UserRepo.GetCombat(ctx, id)
+	combat, err := s.UserRepo.GetCombat(ctx, id)
+	if err != nil {
+		return combat, err
+	}
+
+	// Apply passive sin drain based on elapsed time since last update
+	if combat.UpdatedAt != nil && combat.SinMeter > 0 {
+		elapsed := time.Since(*combat.UpdatedAt)
+		drained := int(elapsed.Minutes() * sinDrainPerMinute)
+		if drained > 0 {
+			combat.SinMeter = max(0, combat.SinMeter-drained)
+			_ = s.UserRepo.UpdateCombat(ctx, id, combat.SinMeter)
+		}
+	}
+
+	return combat, nil
 }
 
 func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {

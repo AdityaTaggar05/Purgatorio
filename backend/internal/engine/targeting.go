@@ -10,7 +10,7 @@ func findNearestBuilding(troops []*troopState, building *buildingState, maxRange
 		if !t.alive {
 			continue
 		}
-		dist := distance(t.pos, buildingCenter(building.pos, building.size))
+		dist := edgeDistance(t.pos, building)
 		if dist <= maxRange {
 			if nearest == nil || dist < nearestDist {
 				nearest = t
@@ -60,4 +60,18 @@ func distance(a, b Point) float64 {
 
 func buildingCenter(pos Point, size int) Point {
 	return Point{X: pos.X + float64(size)/2.0, Y: pos.Y + float64(size)/2.0}
+}
+
+// edgeDistance returns the shortest distance from point p to the footprint rectangle of building b.
+func edgeDistance(p Point, b *buildingState) float64 {
+	left := b.pos.X
+	right := b.pos.X + float64(b.size)
+	top := b.pos.Y
+	bottom := b.pos.Y + float64(b.size)
+
+	// Clamp p to the nearest point on the building rect
+	cx := math.Max(left, math.Min(p.X, right))
+	cy := math.Max(top, math.Min(p.Y, bottom))
+
+	return math.Sqrt((p.X-cx)*(p.X-cx) + (p.Y-cy)*(p.Y-cy))
 }

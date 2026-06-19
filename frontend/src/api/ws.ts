@@ -117,6 +117,11 @@ export class BattleSocket {
     this.ws.send(JSON.stringify({ type: "done" }));
   }
 
+  sendSkip(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ type: "skip" }));
+  }
+
   disconnect(): void {
     this.stopDeployCountdown();
     if (this.ws && this.ws.readyState !== WebSocket.CLOSED && this.ws.readyState !== WebSocket.CLOSING) {

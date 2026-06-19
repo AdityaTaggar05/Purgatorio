@@ -226,7 +226,7 @@ func (s *BattleService) PrepareSimulation(ctx context.Context, battleID, userID 
 	return engine.NewSimulation(input), nil
 }
 
-func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID, sim *engine.Simulation, deployment []engine.TroopDeployment) (*model.BattleOutcome, error) {
+func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID, sim *engine.Simulation, deployment []engine.TroopDeployment, endTick int) (*model.BattleOutcome, error) {
 	battle, err := s.BattleRepo.GetBattle(ctx, battleID)
 	if err != nil {
 		return nil, purgerr.Wrap(ErrBattleNotFound, err)
@@ -236,7 +236,29 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		return nil, purgerr.Wrap(fmt.Errorf("battle has no snapshot"), fmt.Errorf("battle has no snapshot"))
 	}
 
-	engineResult := sim.Result()
+	var engineResult engine.BattleResult
+	if endTick > 0 {
+		buildings, loadErr := s.BattleRepo.GetBaseSnapshot(ctx, *battle.BaseSnapshotID)
+		if loadErr != nil {
+			return nil, purgerr.Wrap(fmt.Errorf("failed to load base snapshot for truncated result"), loadErr)
+		}
+		truncatedInput := engine.BattleInput{
+			Seed:        sim.Seed(),
+			Deployments: deployment,
+			Buildings:   buildings,
+			Catalog:     s.Catalog,
+			TicksPerSec: 20,
+			MaxDuration: 3600,
+			EndTick:     endTick,
+		}
+		truncatedSim := engine.NewSimulation(truncatedInput)
+		for !truncatedSim.IsDone() {
+			truncatedSim.NextTick()
+		}
+		engineResult = truncatedSim.Result()
+	} else {
+		engineResult = sim.Result()
+	}
 
 	attackerCombat, err := s.BattleRepo.GetUserCombat(ctx, battle.AttackerID)
 	if err != nil {
@@ -314,6 +336,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		Deployment:     deployment,
 		Seed:           sim.Seed(),
 		BaseSnapshotID: *battle.BaseSnapshotID,
+		EndTick:        endTick,
 	}
 	if err := s.BattleRepo.StoreReplay(ctx, battleID, replayData); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to store replay"), err)
@@ -346,6 +369,7 @@ func (s *BattleService) GetReplay(ctx context.Context, battleID uuid.UUID) (*mod
 		Catalog:     s.Catalog,
 		TicksPerSec: 10,
 		MaxDuration: 6000,
+		EndTick:     replay.Data.EndTick,
 	}
 
 	sim := engine.NewSimulation(input)

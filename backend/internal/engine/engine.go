@@ -23,6 +23,7 @@ type Simulation struct {
 	initHP      map[string]int
 	seed        int64
 	idSeq       int
+	endTick     int // 0 = run to completion
 }
 
 func NewSimulation(input BattleInput) *Simulation {
@@ -122,8 +123,10 @@ func (s *Simulation) retargetTroops() {
 		if t.targetID == "" || !s.buildingAliveByID(t.targetID) {
 			if b := findNearestBuildingForTroop(t, s.buildings); b != nil {
 				t.targetID = b.id
+				t.path = nil // Clear old path for new target
 			} else {
 				t.targetID = ""
+				t.path = nil
 			}
 		}
 	}
@@ -148,11 +151,32 @@ func (s *Simulation) moveTroops(step float64) {
 			continue
 		}
 		center := buildingCenter(target.pos, target.size)
-		dist := distance(t.pos, center)
+		edgeDist := edgeDistance(t.pos, target)
 		speedStep := t.speed * step
-		if dist <= t.range_ {
+
+		if edgeDist <= t.range_ {
+			t.path = nil
 			continue
 		}
+
+		if len(t.path) == 0 {
+			t.path = s.findPathForTroop(t, target)
+		}
+
+		if len(t.path) > 0 {
+			wp := t.path[0]
+			wpDist := distance(t.pos, wp)
+			if wpDist <= speedStep {
+				t.pos = wp
+				t.path = t.path[1:]
+			} else {
+				moveToward(t, wp, speedStep)
+			}
+			continue
+		}
+
+		// No path (fallback) — move directly toward center
+		dist := distance(t.pos, center)
 		if dist-speedStep <= t.range_ {
 			moveToward(t, center, dist-t.range_)
 		} else {
@@ -194,7 +218,7 @@ func (s *Simulation) troopsAttack(step float64) {
 		if target == nil || !target.alive {
 			continue
 		}
-		dist := distance(t.pos, buildingCenter(target.pos, target.size))
+		dist := edgeDistance(t.pos, target)
 		if dist > t.range_ {
 			continue
 		}

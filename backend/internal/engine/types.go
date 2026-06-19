@@ -31,6 +31,7 @@ type BattleInput struct {
 	Catalog     TroopCatalog
 	TicksPerSec int
 	MaxDuration int
+	EndTick     int // 0 = run to completion
 }
 
 type PositionChange struct {
@@ -90,6 +91,7 @@ type troopState struct {
 	pos      Point
 	targetID string
 	alive    bool
+	path     []Point // A* waypoints toward current target
 }
 
 type buildingState struct {
