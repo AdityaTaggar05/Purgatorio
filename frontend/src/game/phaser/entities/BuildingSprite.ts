@@ -20,6 +20,8 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   public currentHealth: number;
   public maxHealth: number;
   private interactive: boolean;
+  private healthBar!: Phaser.GameObjects.Graphics;
+  private healthBarInitialized = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, data: PlacedBuilding, interactive = true) {
     super(scene, x, y);
@@ -47,6 +49,14 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
       this.add(this.mainSprite);
     } catch (_) {
       console.warn(`Asset binding failed for frame: ${spriteKey}. Using debug fallback.`);
+    }
+
+    // HP bar only in battle mode (non-interactive), rendered on top of sprite
+    if (!this.interactive) {
+      this.healthBar = scene.add.graphics();
+      this.add(this.healthBar);
+      this.healthBarInitialized = true;
+      this.drawHealthBar();
     }
 
     if (this.interactive) this.setupInteractions();
@@ -158,9 +168,25 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     });
   }
 
+  private drawHealthBar() {
+    if (!this.healthBarInitialized) return;
+    const pct = this.currentHealth / Math.max(1, this.maxHealth);
+    const barW = this.spriteW * 0.6;
+    const barH = 10;
+    const barY = -this.spriteH / 2 - barH - 6;
+    const color = pct > 0.6 ? 0x22c55e : pct > 0.3 ? 0xeab308 : 0xef4444;
+
+    this.healthBar.clear();
+    this.healthBar.fillStyle(0x000000, 0.7);
+    this.healthBar.fillRoundedRect(-barW / 2, barY, barW, barH, 3);
+    this.healthBar.fillStyle(color, 1);
+    this.healthBar.fillRoundedRect(-barW / 2, barY, barW * pct, barH, 3);
+  }
+
   public takeDamage(amount: number) {
     this.currentHealth = Math.max(0, this.currentHealth - amount);
     this.flash();
+    this.drawHealthBar();
 
     if (this.currentHealth <= 0) {
       this.destroy();
@@ -172,6 +198,7 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
       this.flash();
     }
     this.currentHealth = Math.max(0, newHp);
+    this.drawHealthBar();
 
     if (this.currentHealth <= 0) {
       this.destroy();
@@ -196,6 +223,7 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     this.hoverRing?.destroy();
     this.selectedTile?.destroy();
     this.upgradeIndicator?.destroy();
+    this.healthBar?.destroy();
     super.destroy(fromScene);
   }
 }

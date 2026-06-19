@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { IsoMath } from '../managers/IsoMath';
 
+const DEPTH_OFFSET = 101;
+
 export interface TroopStackData {
   id: string;
   troopType: string;
@@ -42,10 +44,8 @@ export class TroopStackSprite extends Phaser.GameObjects.Container {
       console.warn(`Asset binding failed for troop frame: ${iconKey}.`);
     }
 
-    if (!staticPreview) {
-      this.hpBar = scene.add.graphics();
-      this.add(this.hpBar);
-    }
+    this.hpBar = scene.add.graphics();
+    this.add(this.hpBar);
 
     this.countBadgeBg = scene.add.graphics();
     this.countBadgeText = scene.add.text(0, 0, '', {
@@ -63,8 +63,17 @@ export class TroopStackSprite extends Phaser.GameObjects.Container {
 
   public update(data: TroopStackData) {
     const wasAlive = this.stackData.alive;
+    const prevX = this.stackData.x;
+    const prevY = this.stackData.y;
     this.stackData = data;
     this.refresh();
+
+    // Update container position if (x, y) changed (troop movement)
+    if (data.x !== prevX || data.y !== prevY) {
+      const pos = IsoMath.subgridToScreen(data.x, data.y, 1);
+      this.setPosition(pos.x, pos.y);
+      this.setDepth(pos.y + DEPTH_OFFSET);
+    }
 
     if (wasAlive && !data.alive && !this.deathTweenStarted) {
       this.deathTweenStarted = true;
