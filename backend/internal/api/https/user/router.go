@@ -12,6 +12,7 @@ func (h *UserHandler) Routes() chi.Router {
 
 	r.Get("/economy", h.HandleGetEconomy)
 	r.Post("/economy/collect", h.HandleEconomyCollect)
+	r.Get("/combat", h.HandleGetCombat)
 
 	return r
 }
