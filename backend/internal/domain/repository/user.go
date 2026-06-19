@@ -25,6 +25,9 @@ type UserRepository interface {
 	GetEconomy(ctx context.Context, id uuid.UUID) (model.UserEconomy, error)
 	UpdateEconomy(ctx context.Context, eco model.UserEconomy) error
 
+	// Combat Functions
+	GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error)
+
 	// Progression
 	UpdateTerraceLevel(ctx context.Context, id uuid.UUID, level int) error
 }

@@ -253,3 +253,14 @@ func (r *UserRepository) UpdateTerraceLevel(ctx context.Context, id uuid.UUID, l
 	)
 	return err
 }
+
+func (r *UserRepository) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error) {
+	var c model.UserCombat
+	c.UserID = id
+	err := r.DB.QueryRow(ctx,
+		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration
+		 FROM user_combat WHERE user_id = $1`,
+		id,
+	).Scan(&c.SinMeter, &c.LastAttackAt, &c.ShieldExpiresAt, &c.ShieldMaxDuration)
+	return c, err
+}
