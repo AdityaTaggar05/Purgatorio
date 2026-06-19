@@ -53,6 +53,7 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   // Playback state
   const [viewingStacks, setViewingStacks] = useState<TroopStackData[]>([]);
   const [currentTick, setCurrentTick] = useState(0);
+  const [resultLoading, setResultLoading] = useState(false);
   const stacksRef = useRef<TroopStackData[]>([]);
   const cursorRef = useRef(0);
   const ticksRef = useRef<TickResult[]>(socket.ticks);
@@ -174,6 +175,7 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   // Auto-transition to result when battle ends
   useEffect(() => {
     if (socket.battleResult && battle.phase === "viewing") {
+      setResultLoading(false);
       dispatch({
         type: "SET_ACTIVE_BATTLE",
         payload: { ...battle, phase: "result", outcome: socket.battleResult.outcome, destruction: socket.battleResult.destruction, loot: socket.battleResult.loot, newSinMeter: socket.battleResult.sin_meter, duration: socket.battleResult.duration_ticks },
@@ -220,7 +222,24 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   };
 
   const handleEndBattle = () => {
-    dispatch({ type: "SET_ACTIVE_BATTLE", payload: null });
+    if (socket.battleResult && battle.phase === "viewing") {
+      dispatch({
+        type: "SET_ACTIVE_BATTLE",
+        payload: {
+          ...battle,
+          phase: "result",
+          outcome: socket.battleResult.outcome,
+          destruction: socket.battleResult.destruction,
+          loot: socket.battleResult.loot,
+          newSinMeter: socket.battleResult.sin_meter,
+          duration: socket.battleResult.duration_ticks,
+        },
+      });
+    } else {
+      socket.sendSkip();
+      setResultLoading(true);
+      cursorRef.current = Infinity;
+    }
   };
 
   const handleStartBattle = () => {
@@ -338,6 +357,8 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
             <div className="text-sm text-gray-500">
               {socket.error ? (
                 <span className="text-red-400">{socket.error}</span>
+              ) : resultLoading ? (
+                <span className="text-amber-400 animate-pulse">Ending battle...</span>
               ) : (
                 `${viewingStacks.filter((s) => s.alive).length} of ${viewingStacks.length} troops still standing`
               )}
