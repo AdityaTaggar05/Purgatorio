@@ -77,7 +77,17 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gridSize := 8 + result.TerraceLevel*2
+	gridW := 30
+	gridH := 30
+	for _, b := range result.Buildings {
+		if int(b.Position.X)+b.Size > gridW {
+			gridW = int(b.Position.X) + b.Size
+		}
+		if int(b.Position.Y)+b.Size > gridH {
+			gridH = int(b.Position.Y) + b.Size
+		}
+	}
+
 	buildingDTOs := make([]buildingDTO, len(result.Buildings))
 	for i, b := range result.Buildings {
 		buildingDTOs[i] = buildingDTO{
@@ -98,8 +108,8 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		DefenderName: result.DefenderName,
 		DefenderLayout: &BaseLayoutDTO{
 			Buildings: buildingDTOs,
-			GridW:     gridSize,
-			GridH:     gridSize,
+			GridW:     gridW,
+			GridH:     gridH,
 		},
 	}, "battle initiated")
 }

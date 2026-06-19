@@ -63,7 +63,6 @@ func (s *BattleService) GetMatchList(ctx context.Context, userID uuid.UUID) ([]m
 type InitiateBattleResult struct {
 	BattleID      uuid.UUID
 	DefenderName  string
-	TerraceLevel  int
 	Buildings     []engine.BuildingSnapshot
 }
 
@@ -121,7 +120,6 @@ func (s *BattleService) InitiateBattle(ctx context.Context, attackerID, defender
 	return &InitiateBattleResult{
 		BattleID:     battleID,
 		DefenderName: defender.Username,
-		TerraceLevel: defender.TerraceLevel,
 		Buildings:    buildings,
 	}, nil
 }

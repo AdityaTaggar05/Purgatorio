@@ -54,7 +54,7 @@ func NewSimulation(input BattleInput) *Simulation {
 		}
 		for i := 0; i < dep.Count; i++ {
 			sim.idSeq++
-			id := fmt.Sprintf("t%d", sim.idSeq)
+			id := fmt.Sprintf("troop_%s_%d", dep.TroopType, sim.idSeq)
 			sim.troops = append(sim.troops, &troopState{
 				id:        id,
 				troopType: dep.TroopType,
