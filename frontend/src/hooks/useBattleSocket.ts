@@ -5,6 +5,7 @@ import type { TroopDeployment, TickResult } from "../types/battle";
 export interface UseBattleSocketResult {
   sendDeploy: (deployment: TroopDeployment[]) => void;
   sendDone: () => void;
+  sendSkip: () => void;
   ticks: TickResult[];
   battleResult: BattleEndPayload | null;
   error: string | null;
@@ -20,9 +21,11 @@ export function useBattleSocket(battleId: string, token: string | null): UseBatt
   const [deployCountdown, setDeployCountdown] = useState(30);
   const socketRef = useRef<BattleSocket | null>(null);
   const deployedRef = useRef(false);
+  const skipSentRef = useRef(false);
 
   useEffect(() => {
     deployedRef.current = false;
+    skipSentRef.current = false;
     setTicks([]);
     setBattleResult(null);
     setError(null);
@@ -42,6 +45,10 @@ export function useBattleSocket(battleId: string, token: string | null): UseBatt
 
     socket.onTickBatch((incomingTicks) => {
       setTicks((prev) => [...prev, ...incomingTicks]);
+      if (!skipSentRef.current && incomingTicks.some((t) => t.done)) {
+        skipSentRef.current = true;
+        socket.sendSkip();
+      }
     });
 
     socket.onBattleEnd((result) => {
@@ -74,5 +81,9 @@ export function useBattleSocket(battleId: string, token: string | null): UseBatt
     socketRef.current?.sendDone();
   }, []);
 
-  return { sendDeploy, sendDone, ticks, battleResult, error, state, deployCountdown };
+  const sendSkip = useCallback(() => {
+    socketRef.current?.sendSkip();
+  }, []);
+
+  return { sendDeploy, sendDone, sendSkip, ticks, battleResult, error, state, deployCountdown };
 }

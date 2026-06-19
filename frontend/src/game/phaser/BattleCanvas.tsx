@@ -44,8 +44,6 @@ export default function BattleCanvas({
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserInstance = useRef<Phaser.Game | null>(null);
 
-  // Set the boot-time-only values before the Phaser.Game (and therefore
-  // BattleScene.preload) is ever constructed.
   troopCatalogIds = catalogIds;
   staticPreviewMode = staticPreview;
 
