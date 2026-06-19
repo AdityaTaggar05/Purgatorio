@@ -254,7 +254,8 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		if err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to get defender economy"), err)
 		}
-		loot = computeLoot(defenderEco.Penitence, engineResult.Destruction)
+		totalPenitence := defenderEco.Penitence + defenderEco.CollectorPendingPenitence
+		loot = computeLoot(totalPenitence, engineResult.Destruction)
 	}
 
 	if err := s.BattleRepo.UpdateBattleOutcome(ctx, battleID, string(finalOutcome), engineResult.Destruction, loot, engineResult.Duration, *battle.BaseSnapshotID); err != nil {
@@ -369,7 +370,7 @@ func resolveSinMeter(result engine.BattleResult, currentSin int) (engine.BattleO
 		return engine.Defeat, currentSin
 	}
 
-	if result.Destruction > float64(currentSin) {
+	if result.Destruction >= float64(currentSin) {
 		newSin := min(currentSin+10, 100)
 		return engine.Victory, newSin
 	}

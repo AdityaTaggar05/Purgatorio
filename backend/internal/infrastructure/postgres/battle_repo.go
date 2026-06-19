@@ -235,7 +235,10 @@ func (r *BattleRepository) GetUserEconomyForBattle(ctx context.Context, userID u
 
 func (r *BattleRepository) DeductDefenderPenitence(ctx context.Context, userID uuid.UUID, amount int) error {
 	_, err := r.DB.Exec(ctx,
-		`UPDATE user_economy SET penitence = GREATEST(penitence - $2, 0), updated_at = now()
+		`UPDATE user_economy SET
+			penitence = GREATEST(penitence - $2, 0),
+			collector_pending_penitence = GREATEST(collector_pending_penitence - GREATEST($2 - penitence, 0), 0),
+			updated_at = now()
 		 WHERE user_id = $1`,
 		userID, amount,
 	)
