@@ -5,8 +5,6 @@ export class CameraManager {
   private cam: Phaser.Cameras.Scene2D.Camera;
   private isPanning = false;
 
-  private mapW = 30;
-  private mapH = 30;
   private mapCenterX = 0;
   private mapCenterY = 0;
 
@@ -50,9 +48,6 @@ export class CameraManager {
   }
 
   public setMapSize(minTileX: number, minTileY: number, maxTileX: number, maxTileY: number) {
-    this.mapW = maxTileX - minTileX;
-    this.mapH = maxTileY - minTileY;
-
     const corners = [
       IsoMath.tileToScreen(minTileX, minTileY),
       IsoMath.tileToScreen(maxTileX, minTileY),
