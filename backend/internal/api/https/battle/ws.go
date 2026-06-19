@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const deploymentTimeSecs = 180
+const deploymentTimeSecs = 60
 
 type wsClientMsg struct {
 	Type   string                   `json:"type"`

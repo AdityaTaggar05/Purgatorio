@@ -104,9 +104,12 @@ func (s *Simulation) NextTick() TickResult {
 	hpChanges := s.collectHPChanges()
 	done := s.checkDone()
 
+	positions := s.collectPositions()
+
 	return TickResult{
 		Tick:      s.tick,
 		HPChanges: hpChanges,
+		Positions: positions,
 		Done:      done,
 	}
 }
@@ -236,6 +239,20 @@ func (s *Simulation) collectHPChanges() []HPChange {
 	return changes
 }
 
+func (s *Simulation) collectPositions() []PositionChange {
+	positions := make([]PositionChange, 0, len(s.troops))
+	for _, t := range s.troops {
+		if t.alive {
+			positions = append(positions, PositionChange{
+				EntityID: t.id,
+				X:        t.pos.X,
+				Y:        t.pos.Y,
+			})
+		}
+	}
+	return positions
+}
+
 func (s *Simulation) checkDone() bool {
 	if s.done {
 		return true
@@ -313,6 +330,9 @@ func (s *Simulation) destructionPercent() float64 {
 	totalMaxHP := 0.0
 	totalDamage := 0.0
 	for _, b := range s.buildings {
+		if b.buildingType == "bastion" {
+			continue
+		}
 		totalMaxHP += float64(b.maxHP)
 		totalDamage += float64(b.maxHP) - b.hp
 	}
