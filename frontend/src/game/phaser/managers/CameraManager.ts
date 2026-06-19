@@ -62,12 +62,13 @@ export class CameraManager {
 
     const halfW = IsoMath.TILE_W / 2;
     const halfH = IsoMath.TILE_H / 2;
-    const pad = 300;
+    const padX = 5 * IsoMath.TILE_W;
+    const padY = 5 * IsoMath.TILE_H;
 
-    const minX = Math.min(...corners.map((c) => c.x)) - halfW - pad;
-    const maxX = Math.max(...corners.map((c) => c.x)) + halfW + pad;
-    const minY = Math.min(...corners.map((c) => c.y)) - halfH - pad;
-    const maxY = Math.max(...corners.map((c) => c.y)) + halfH + pad;
+    const minX = Math.min(...corners.map((c) => c.x)) - halfW - padX;
+    const maxX = Math.max(...corners.map((c) => c.x)) + halfW + padX;
+    const minY = Math.min(...corners.map((c) => c.y)) - halfH - padY;
+    const maxY = Math.max(...corners.map((c) => c.y)) + halfH + padY;
 
     this.mapCenterX = (minX + maxX) / 2;
     this.mapCenterY = (minY + maxY) / 2;
