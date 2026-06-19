@@ -27,9 +27,16 @@ export interface TroopDeployment {
   count: number;
 }
 
+export interface PositionChange {
+  entity_id: string;
+  x: number;
+  y: number;
+}
+
 export interface TickResult {
   tick: number;
   hp_changes: HpChange[];
+  positions: PositionChange[];
   done?: boolean;
 }
 
