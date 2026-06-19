@@ -20,6 +20,8 @@ import { preloadBuildingAssets } from "../assetManifest";
 
 const GF = IsoMath.SUBDIVISIONS;
 const DEFAULT_GRID = 30;
+const PADDING = 6;          // extra subgrid cells on each side for deployment
+const PADDING_TILES = Math.ceil(PADDING / GF);
 
 export class BattleScene extends Phaser.Scene {
   private terrain!: TerrainEngine;
@@ -43,7 +45,7 @@ export class BattleScene extends Phaser.Scene {
   create() {
     this.cameraManager = new CameraManager(this);
     this.terrain = new TerrainEngine(this);
-    this.layoutEngine = new LayoutEngine(this, false); // read-only: no hover/click wiring
+    this.layoutEngine = new LayoutEngine(this, false);
     this.troopOverlay = new TroopOverlayEngine(this, staticPreviewMode);
 
     this.zoneGraphics = this.add.graphics();
@@ -61,35 +63,24 @@ export class BattleScene extends Phaser.Scene {
 
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
       const sub = IsoMath.screenToSubgrid(worldPoint.x, worldPoint.y, 1);
-      const gridSize = latestDefenderLayout?.grid_w ?? DEFAULT_GRID;
-      if (sub.x < 0 || sub.y < 0 || sub.x >= gridSize || sub.y >= gridSize) return;
-
       battleEvents.onCellClick(sub.x, sub.y);
     });
 
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (!latestSelectedTroop) {
+      if (!latestSelectedTroop || !deployClickEnabled) {
         this.troopGhost.setVisible(false);
         return;
       }
 
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
       const sub = IsoMath.screenToSubgrid(worldPoint.x, worldPoint.y, 1);
-      const gridSize = latestDefenderLayout?.grid_w ?? DEFAULT_GRID;
-      if (sub.x < 0 || sub.y < 0 || sub.x >= gridSize || sub.y >= gridSize) {
-        this.troopGhost.setVisible(false);
-        return;
-      }
-
       const screenPos = IsoMath.subgridToScreen(sub.x, sub.y, 1);
       this.troopGhost.setPosition(screenPos.x, screenPos.y);
       this.troopGhost.setTexture(`troop_${latestSelectedTroop}`);
 
-      const tileH = IsoMath.TILE_H / GF;
       const tileW = IsoMath.TILE_W / GF;
       const scale = tileW / this.troopGhost.width;
       this.troopGhost.setScale(scale);
-
       this.troopGhost.setVisible(true);
     });
 
@@ -115,11 +106,14 @@ export class BattleScene extends Phaser.Scene {
     const tilesW = IsoMath.gridToTiles(gridW);
     const tilesH = IsoMath.gridToTiles(gridH);
 
-    this.cameraManager.setMapSize(tilesW, tilesH);
-    this.cameraManager.centerOnMap();
-
     this.terrain.destroyMap();
-    this.terrain.generateGroundGrid(tilesW, tilesH);
+    this.terrain.generateGroundGrid(tilesW, tilesH, PADDING_TILES);
+
+    const totalTW = tilesW + PADDING_TILES * 2;
+    const totalTH = tilesH + PADDING_TILES * 2;
+    this.cameraManager.setMapSize(-PADDING_TILES, -PADDING_TILES, totalTW - PADDING_TILES, totalTH - PADDING_TILES);
+    const centerPos = IsoMath.tileToScreen(tilesW / 2, tilesH / 2);
+    this.cameraManager.centerOnMap(centerPos.x, centerPos.y);
   }
 
   private renderLayout() {
@@ -151,14 +145,13 @@ export class BattleScene extends Phaser.Scene {
     if (!latestDeploymentZone) return;
 
     const selectedSet = new Set(latestSelectedCells.map((c) => `${c.x},${c.y}`));
-    const toScreen = (sx: number, sy: number) => IsoMath.tileToScreen(sx / GF, sy / GF);
 
     latestDeploymentZone.forEach(({ x, y }) => {
       const isSelected = selectedSet.has(`${x},${y}`);
-      const a = toScreen(x, y);
-      const b = toScreen(x + 1, y);
-      const c = toScreen(x + 1, y + 1);
-      const d = toScreen(x, y + 1);
+      const a = IsoMath.subgridToScreen(x, y, 1);
+      const b = IsoMath.subgridToScreen(x + 1, y, 1);
+      const c = IsoMath.subgridToScreen(x + 1, y + 1, 1);
+      const d = IsoMath.subgridToScreen(x, y + 1, 1);
 
       this.zoneGraphics.fillStyle(0x22c55e, isSelected ? 0.45 : 0.12);
       this.zoneGraphics.lineStyle(2, 0x22c55e, isSelected ? 0.8 : 0.35);

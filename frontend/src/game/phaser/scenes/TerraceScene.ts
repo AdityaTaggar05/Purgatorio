@@ -180,11 +180,11 @@ export class TerraceScene extends Phaser.Scene {
     const tilesW = IsoMath.gridToTiles(latestLayout.grid_w);
     const tilesH = IsoMath.gridToTiles(latestLayout.grid_h);
 
-    this.cameraManager.setMapSize(tilesW, tilesH);
+    this.cameraManager.setMapSize(0, 0, tilesW, tilesH);
     this.cameraManager.centerOnMap();
 
     this.terrain.destroyMap();
-    this.terrain.generateGroundGrid(tilesW, tilesH);
+    this.terrain.generateGroundGrid(tilesW, tilesH, 0);
     this.layoutEngine.renderLayout(latestLayout);
   }
 }
