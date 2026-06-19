@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import GameCanvas from '../../game/phaser/GameCanvas';
 import { useAuth } from '../../hooks/useAuth';
 import { useGame } from '../../hooks/useGame';
@@ -14,6 +14,9 @@ import * as baseApi from '../../api/endpoints/base';
 import * as economyApi from '../../api/endpoints/economy';
 import type { PlacedBuilding } from '../../types/building';
 
+const SIN_DRAIN_PER_MINUTE = 1 / 6; // 10% per hour; matches backend
+const DRAIN_INTERVAL_MS = 10_000;
+
 export default function GameDashboard() {
   const { user, logout } = useAuth();
   const { state, api, dispatch } = useGame();
@@ -22,6 +25,28 @@ export default function GameDashboard() {
   const [matchmakingOpen, setMatchmakingOpen] = useState(false);
   const [buildingMenu, setBuildingMenu] = useState<PlacedBuilding | null>(null);
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
+
+  const [displaySin, setDisplaySin] = useState(state.sinMeter);
+  const sinInfoRef = useRef({ sin: state.sinMeter, syncedAt: Date.now() });
+
+  useEffect(() => {
+    sinInfoRef.current = { sin: state.sinMeter, syncedAt: Date.now() };
+    setDisplaySin(state.sinMeter);
+  }, [state.sinMeter]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const { sin, syncedAt } = sinInfoRef.current;
+      const elapsedMin = (Date.now() - syncedAt) / 60000;
+      const drained = Math.floor(elapsedMin * SIN_DRAIN_PER_MINUTE);
+      setDisplaySin(Math.max(0, sin - drained));
+    }, DRAIN_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  const drainTimeEstimate = displaySin > 0
+    ? Math.ceil(displaySin / (SIN_DRAIN_PER_MINUTE * 60))
+    : 0; // hours
 
   useEffect(() => {
     if (state.checkInResult) {
@@ -86,7 +111,7 @@ export default function GameDashboard() {
         username={user?.username || "Unknown Penitent"}
         level={user?.level || 1}
         economy={state.economy}
-        sinMeter={state.sinMeter}
+        sinMeter={displaySin}
         onAscensionClick={() => setShopOpen(true)}
         onLogoutClick={logout}
         onAttackClick={handleAttack}

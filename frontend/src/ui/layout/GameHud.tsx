@@ -15,6 +15,14 @@ export default function GameHud({
 
   const getPercent = (current: number, max: number) => Math.min(100, Math.max(0, (current / max) * 100));
 
+  const drainTooltip = (() => {
+    if (sinMeter <= 0) return "Sin meter is empty";
+    const totalHours = sinMeter / 10; // 10% drain per hour
+    const h = Math.floor(totalHours);
+    const m = Math.ceil((totalHours - h) * 60);
+    return `Time to drain: ${h}h ${m}m`;
+  })();
+
   return (
     <div className="absolute inset-0 pointer-events-none z-20 font-serif select-none p-6 flex flex-col justify-between">
 
@@ -33,7 +41,7 @@ export default function GameHud({
         </div>
 
         {/* TOP CENTER */}
-        <div className="pointer-events-auto flex flex-col items-center w-80 bg-purgatory-card/90 backdrop-blur-md border border-purgatory-border p-3 rounded shadow-xl mx-4">
+        <div className="pointer-events-auto flex flex-col items-center w-80 bg-purgatory-card/90 backdrop-blur-md border border-purgatory-border p-3 rounded shadow-xl mx-4" title={drainTooltip}>
           <div className="flex justify-between w-full text-[10px] tracking-[0.2em] text-red-500/90 uppercase font-bold mb-1.5">
             <span>Sin Meter</span>
             <span>{sinMeter}%</span>
