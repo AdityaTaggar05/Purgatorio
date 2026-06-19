@@ -4,6 +4,7 @@ import type { TroopDeployment, TickResult } from "../types/battle";
 
 export interface UseBattleSocketResult {
   sendDeploy: (deployment: TroopDeployment[]) => void;
+  sendDone: () => void;
   ticks: TickResult[];
   battleResult: BattleEndPayload | null;
   error: string | null;
@@ -69,5 +70,9 @@ export function useBattleSocket(battleId: string, token: string | null): UseBatt
     []
   );
 
-  return { sendDeploy, ticks, battleResult, error, state, deployCountdown };
+  const sendDone = useCallback(() => {
+    socketRef.current?.sendDone();
+  }, []);
+
+  return { sendDeploy, sendDone, ticks, battleResult, error, state, deployCountdown };
 }

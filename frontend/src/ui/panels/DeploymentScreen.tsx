@@ -37,7 +37,7 @@ function TroopThumb({ troopType }: { troopType: string }) {
 
 export default function DeploymentScreen({ battle, socket }: DeploymentScreenProps) {
   const { state, dispatch } = useGame();
-  const { sendDeploy, state: socketState, error: socketError, deployCountdown } = socket;
+  const { sendDeploy, sendDone, state: socketState, error: socketError, deployCountdown } = socket;
 
   const catalog = state.troopCatalog ?? [];
   const army = state.army?.troops ?? {};
@@ -54,12 +54,19 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
   }, [deployments]);
 
   const deploymentZone = useMemo(() => {
+    const gridW = battle.defenderLayout?.grid_w ?? GRID_SIZE;
+    const gridH = battle.defenderLayout?.grid_h ?? GRID_SIZE;
+    const PAD = 6;
     const cells: { x: number; y: number }[] = [];
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let x = 0; x < 3; x++) cells.push({ x, y });
+    // top strip, bottom strip, left strip, right strip all outside the base
+    for (let y = -PAD; y < gridH + PAD; y++) {
+      for (let x = -PAD; x < gridW + PAD; x++) {
+        const inBase = x >= 0 && x < gridW && y >= 0 && y < gridH;
+        if (!inBase) cells.push({ x, y });
+      }
     }
     return cells;
-  }, []);
+  }, [battle.defenderLayout]);
 
   const totalDeployed = deployments.reduce((sum, d) => sum + d.count, 0);
 
@@ -93,8 +100,26 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
       return;
     }
 
-    setDeployments((prev) => [...prev, { troop_type: selectedTroop, position: { x, y }, count }]);
+    const deployment = { troop_type: selectedTroop, position: { x, y }, count };
+    setDeployments((prev) => [...prev, deployment]);
+    sendDeploy([deployment]);
     setDeployError(null);
+  };
+
+  const handleStartBattle = () => {
+    if (deployments.length === 0) {
+      setDeployError("Deploy at least one troop");
+      return;
+    }
+    if (socketState !== "open" && socketState !== "deployed") {
+      setDeployError("Battle server not connected");
+      return;
+    }
+    sendDone();
+    dispatch({
+      type: "SET_ACTIVE_BATTLE",
+      payload: { ...battle, phase: "viewing", deployment: deployments },
+    });
   };
 
   const incrementCount = (troopId: string) => {
@@ -150,8 +175,8 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
     [deployments, catalog]
   );
 
-  const canDeploy = socketState === "open";
-  const isDeployEnabled = canDeploy && deployments.length > 0;
+  const canDeploy = socketState === "open" || socketState === "deployed";
+  const isStartEnabled = canDeploy && deployments.length > 0;
 
   return (
     <div className="absolute inset-0 z-50 bg-black/95 flex flex-col">
@@ -290,13 +315,13 @@ export default function DeploymentScreen({ battle, socket }: DeploymentScreenPro
           </button>
           <button
             type="button"
-            onClick={handleDeploy}
-            disabled={!isDeployEnabled}
+            onClick={handleStartBattle}
+            disabled={!isStartEnabled}
             className="text-xs uppercase tracking-widest font-bold px-8 py-2 rounded border transition-all
               enabled:border-red-600/60 enabled:text-red-400 enabled:hover:bg-red-900/30 enabled:hover:border-red-500
               disabled:border-gray-700 disabled:text-gray-600 disabled:cursor-not-allowed"
           >
-            {socketState === "connecting" ? "Connecting..." : "Deploy"}
+            {socketState === "connecting" ? "Connecting..." : "Start Battle"}
           </button>
         </div>
       </div>
