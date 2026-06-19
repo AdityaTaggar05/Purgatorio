@@ -16,34 +16,23 @@ interface BattleOverlayProps {
 const PAD = 6;
 const TICK_INTERVAL_MS = 100;
 
-function parseTroopType(entityId: string): string | null {
+function parseTroopSeq(entityId: string): number | null {
   const parts = entityId.split("_");
   if (parts.length < 3 || parts[0] !== "troop") return null;
-  return parts.slice(1, -1).join("_");
+  const seq = parseInt(parts[parts.length - 1], 10);
+  return isNaN(seq) ? null : seq;
 }
 
 function applyHPChanges(stacks: TroopStackData[], changes: HpChange[]): TroopStackData[] {
-  let next = stacks;
+  const next = [...stacks];
   for (const change of changes) {
     if (change.entity_type !== "troop") continue;
-    const troopType = parseTroopType(change.entity_id);
-    if (!troopType) continue;
-
-    // Apply damage to the weakest stack of this troop type
-    let targetIndex = -1;
-    let lowestFraction = Infinity;
-    next.forEach((s, i) => {
-      if (s.troopType !== troopType || !s.alive) return;
-      const fraction = s.hp / Math.max(1, s.unitMaxHp * s.totalUnits);
-      if (fraction < lowestFraction) { lowestFraction = fraction; targetIndex = i; }
-    });
-    if (targetIndex === -1) continue;
-
-    next = next.map((s, i) => {
-      if (i !== targetIndex) return s;
-      const newHp = Math.max(0, s.hp + change.delta);
-      return { ...s, hp: newHp, alive: newHp > 0 };
-    });
+    const seq = parseTroopSeq(change.entity_id);
+    if (seq === null) continue;
+    const idx = seq - 1;
+    if (idx < 0 || idx >= next.length) continue;
+    const newHp = Math.max(0, next[idx].hp + change.delta);
+    next[idx] = { ...next[idx], hp: newHp, alive: newHp > 0 };
   }
   return next;
 }
@@ -67,7 +56,6 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   const stacksRef = useRef<TroopStackData[]>([]);
   const cursorRef = useRef(0);
   const ticksRef = useRef<TickResult[]>(socket.ticks);
-  const troopPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
   const [buildingHpByKey, setBuildingHpByKey] = useState<Record<string, number>>({});
   const buildingHpRef = useRef<Record<string, number>>({});
 
@@ -99,56 +87,46 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   // Keep ticksRef in sync
   useEffect(() => { ticksRef.current = socket.ticks; }, [socket.ticks]);
 
-  // Initialise playback stacks on transition to viewing
+  // Initialise playback stacks — one per individual unit
   useEffect(() => {
     if (battle.phase !== "viewing") return;
-    const initial: TroopStackData[] = deployments.map((d, i) => {
+    const initial: TroopStackData[] = [];
+    deployments.forEach((d, di) => {
       const troopDef = catalog.find((t) => t.id === d.troop_type);
       const unitHp = troopDef?.hp ?? 1;
-      return {
-        id: `stack_${i}`,
-        troopType: d.troop_type,
-        x: d.position.x,
-        y: d.position.y,
-        unitMaxHp: unitHp,
-        totalUnits: d.count,
-        hp: unitHp * d.count,
-        alive: true,
-      };
+      for (let j = 0; j < d.count; j++) {
+        const offset = (j - (d.count - 1) / 2) * 0.35;
+        initial.push({
+          id: `stack_${di}_${j}`,
+          troopType: d.troop_type,
+          x: d.position.x + offset,
+          y: d.position.y,
+          unitMaxHp: unitHp,
+          totalUnits: 1,
+          hp: unitHp,
+          alive: true,
+        });
+      }
     });
     setViewingStacks(initial);
     stacksRef.current = initial;
     cursorRef.current = 0;
-    troopPositionsRef.current = {};
     buildingHpRef.current = {};
     setBuildingHpByKey({});
   }, [battle.phase, deployments, catalog]);
 
-  // Store current tick's position data for stack centroid calculation
+  // Map each backend entity position to its matching stack by sequence number
   const applyPositions = (stacks: TroopStackData[], positions: PositionChange[]) => {
-    const posMap = troopPositionsRef.current;
+    const next = [...stacks];
     for (const p of positions) {
-      posMap[p.entity_id] = { x: p.x, y: p.y };
+      const seq = parseTroopSeq(p.entity_id);
+      if (seq === null) continue;
+      const idx = seq - 1;
+      if (idx >= 0 && idx < next.length) {
+        next[idx] = { ...next[idx], x: p.x, y: p.y };
+      }
     }
-
-    // Build a map of troop type -> array of alive positions
-    const typePositions: Record<string, { x: number; y: number }[]> = {};
-    for (const [entityId, pt] of Object.entries(posMap)) {
-      const parts = entityId.split("_");
-      if (parts.length < 3 || parts[0] !== "troop") continue;
-      const troopType = parts.slice(1, -1).join("_");
-      if (!typePositions[troopType]) typePositions[troopType] = [];
-      typePositions[troopType].push(pt);
-    }
-
-    // Update each stack's (x, y) to the centroid of its troop type's alive entities
-    return stacks.map((s) => {
-      const pts = typePositions[s.troopType];
-      if (!pts || pts.length === 0) return s;
-      const cx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
-      const cy = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
-      return { ...s, x: cx, y: cy };
-    });
+    return next;
   };
 
   // Playback tick loop
@@ -273,23 +251,29 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
     setDeployCounts((prev) => ({ ...prev, [troopId]: Math.max(1, (prev[troopId] ?? 1) - 1) }));
   };
 
-  // Preview stacks during deployment
+  // Preview stacks during deployment — one per individual unit
   const previewStacks = useMemo<TroopStackData[]>(
-    () =>
-      deployments.map((d, i) => {
+    () => {
+      const stacks: TroopStackData[] = [];
+      deployments.forEach((d, di) => {
         const troopDef = catalog.find((t) => t.id === d.troop_type);
         const unitHp = troopDef?.hp ?? 1;
-        return {
-          id: `preview_${i}`,
-          troopType: d.troop_type,
-          x: d.position.x,
-          y: d.position.y,
-          unitMaxHp: unitHp,
-          totalUnits: d.count,
-          hp: unitHp * d.count,
-          alive: true,
-        };
-      }),
+        for (let j = 0; j < d.count; j++) {
+          const offset = (j - (d.count - 1) / 2) * 0.35;
+          stacks.push({
+            id: `preview_${di}_${j}`,
+            troopType: d.troop_type,
+            x: d.position.x + offset,
+            y: d.position.y,
+            unitMaxHp: unitHp,
+            totalUnits: 1,
+            hp: unitHp,
+            alive: true,
+          });
+        }
+      });
+      return stacks;
+    },
     [deployments, catalog]
   );
 
@@ -355,7 +339,7 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
               {socket.error ? (
                 <span className="text-red-400">{socket.error}</span>
               ) : (
-                `${viewingStacks.filter((s) => s.alive).length} of ${viewingStacks.length} troop groups still standing`
+                `${viewingStacks.filter((s) => s.alive).length} of ${viewingStacks.length} troops still standing`
               )}
             </div>
             <button

@@ -37,8 +37,6 @@ export default function BattleResultScreen({ battle }: BattleResultScreenProps) 
       dispatch({ type: "SET_SIN_METER", payload: newSinMeter });
     }
 
-    // Troops were deducted and penitence/loot changed server-side during the
-    // battle — refresh both so the HUD and Legion panel reflect reality.
     const [econRes, armyRes] = await Promise.all([
       economyApi.getEconomy(api),
       armyApi.getMyTroops(api),
