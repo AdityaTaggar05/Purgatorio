@@ -27,7 +27,7 @@ export function useBattleSocket(battleId: string, token: string | null): UseBatt
     setBattleResult(null);
     setError(null);
     setState("connecting");
-    setDeployCountdown(30);
+    setDeployCountdown(60);
 
     const socket = new BattleSocket(battleId, token);
     socketRef.current = socket;

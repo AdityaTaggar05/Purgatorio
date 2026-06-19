@@ -128,12 +128,20 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private applyBuildingDamage() {
-    this.layoutEngine.activeBuildings.forEach((sprite) => {
+    for (let i = this.layoutEngine.activeBuildings.length - 1; i >= 0; i--) {
+      const sprite = this.layoutEngine.activeBuildings[i];
+      if (!sprite.active || !sprite.scene) {
+        this.layoutEngine.activeBuildings.splice(i, 1);
+        continue;
+      }
       const key = `${sprite.buildingData.x}_${sprite.buildingData.y}`;
       const hp = latestBuildingHpByKey[key];
-      if (hp === undefined) return;
+      if (hp === undefined) continue;
       sprite.applyHp(hp);
-    });
+      if (!sprite.active) {
+        this.layoutEngine.activeBuildings.splice(i, 1);
+      }
+    }
   }
 
   private drawZoneOverlay() {
