@@ -103,8 +103,13 @@ export class BattleSocket {
 
   sendDeploy(deployment: TroopDeployment[]): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.stopDeployCountdown();
     this.ws.send(JSON.stringify({ type: "deploy", troops: deployment }));
+  }
+
+  sendDone(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.stopDeployCountdown();
+    this.ws.send(JSON.stringify({ type: "done" }));
   }
 
   disconnect(): void {
