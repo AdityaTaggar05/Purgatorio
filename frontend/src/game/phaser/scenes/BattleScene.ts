@@ -127,10 +127,6 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // Building positions/sprites are only (re)created when the snapshot
-  // itself changes (see renderLayout). HP, however, changes every tick
-  // during playback, so it's applied in place against the existing
-  // sprites — same reasoning as TroopOverlayEngine.sync vs full re-render.
   private applyBuildingDamage() {
     this.layoutEngine.activeBuildings.forEach((sprite) => {
       const key = `${sprite.buildingData.x}_${sprite.buildingData.y}`;

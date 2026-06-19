@@ -66,7 +66,7 @@ export class TerraceScene extends Phaser.Scene {
       const screenPos = IsoMath.subgridToScreen(clampedX, clampedY, size);
       const tileH = IsoMath.TILE_H / IsoMath.SUBDIVISIONS;
       this.ghostSprite.setPosition(screenPos.x, screenPos.y + (tileH * size) / 2);
-      this.ghostSprite.setTexture(`building_${phaserEvents.placementBuilding.id}`);
+      this.ghostSprite.setTexture(`building_${phaserEvents.placementBuilding.id}${phaserEvents.placementBuilding.id == "bastion" ? "-corner" : ""}`);
       this.ghostSprite.setVisible(true);
 
       const tileW = IsoMath.TILE_W / IsoMath.SUBDIVISIONS;
