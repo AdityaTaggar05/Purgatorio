@@ -25,6 +25,7 @@ var (
 
 	ErrTroopNotFound            = errors.New("troop not found")
 	ErrInsufficientArmyCapacity = errors.New("insufficient army capacity")
+	ErrInsufficientTroops       = errors.New("insufficient troops in army")
 
 	ErrCannotAttackSelf       = errors.New("cannot attack yourself")
 	ErrDefenderNotFound       = errors.New("defender not found")

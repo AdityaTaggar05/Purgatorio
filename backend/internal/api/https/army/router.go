@@ -8,6 +8,7 @@ func (h *ArmyHandler) Routes() chi.Router {
 	r.Get("/troops", h.HandleGetTroops)
 	r.Get("/my-troops", h.HandleGetMyTroops)
 	r.Post("/train", h.HandleTrainTroops)
+	r.Post("/detrain", h.HandleDetrainTroops)
 
 	return r
 }
