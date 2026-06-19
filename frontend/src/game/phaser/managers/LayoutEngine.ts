@@ -19,7 +19,7 @@ function computeBastionEdges(layout: BaseLayout): Map<string, string | null> {
     const dx = byKey.has(`${b.x + 1},${b.y}`) ? 1 : byKey.has(`${b.x - 1},${b.y}`) ? -1 : 0;
     const dy = byKey.has(`${b.x},${b.y + 1}`) ? 1 : byKey.has(`${b.x},${b.y - 1}`) ? -1 : 0;
 
-    if (dx === 0 && dy === 0) {
+    if ((dx === 0 && dy === 0) || (dx !== 0 && dy !== 0)) {
       result.set(key, 'building_bastion-corner');
     } else if (dx !== 0) {
       result.set(key, 'building_bastion-edge-left');
