@@ -11,9 +11,10 @@ import (
 func (h *UserHandler) HandleEconomyCollect(w http.ResponseWriter, r *http.Request) {
 	if data, err := h.Service.EconomyCollect(r.Context(), r.Context().Value(ctxkeys.UserID).(uuid.UUID)); err == nil {
 		response.JSON(w, http.StatusOK, EconomyResponseDTO{
-			Penitence:    data.Penitence,
-			Grace:        data.Grace,
-			MaxPenitence: data.MaxPenitence,
+			Penitence:         data.Penitence,
+			Grace:             data.Grace,
+			MaxPenitence:      data.MaxPenitence,
+			OverflowPenitence: data.CollectorPendingPenitence,
 		})
 	} else {
 		response.Error(r.Context(), w, http.StatusInternalServerError, err)

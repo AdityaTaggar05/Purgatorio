@@ -19,19 +19,24 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
 
   public currentHealth: number;
   public maxHealth: number;
+  private interactive: boolean;
+  private healthBar!: Phaser.GameObjects.Graphics;
+  private healthBarInitialized = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, data: PlacedBuilding) {
+  constructor(scene: Phaser.Scene, x: number, y: number, data: PlacedBuilding, interactive = true) {
     super(scene, x, y);
     this.buildingData = data;
+    this.interactive = interactive;
 
     this.maxHealth = data.hp ?? data.size * 500;
     this.currentHealth = this.maxHealth;
 
-    const spriteKey = `building_${data.building_id}`;
+    const overrideKey = (data.metadata as Record<string, unknown> | undefined)?.['sprite_key'] as string | undefined;
+    const spriteKey = overrideKey ?? `building_${data.building_id}`;
     this.spriteW = (IsoMath.TILE_W / GF) * data.size;
     this.spriteH = (IsoMath.TILE_H / GF) * data.size;
 
-    this.createRings(scene);
+    if (this.interactive) this.createRings(scene);
 
     try {
       this.mainSprite = scene.add.sprite(0, 0, spriteKey);
@@ -46,7 +51,15 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
       console.warn(`Asset binding failed for frame: ${spriteKey}. Using debug fallback.`);
     }
 
-    this.setupInteractions();
+    // HP bar only in battle mode (non-interactive), rendered on top of sprite
+    if (!this.interactive) {
+      this.healthBar = scene.add.graphics();
+      this.add(this.healthBar);
+      this.healthBarInitialized = true;
+      this.drawHealthBar();
+    }
+
+    if (this.interactive) this.setupInteractions();
 
     scene.add.existing(this);
   }
@@ -125,16 +138,17 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
   }
 
   private setupInteractions() {
-    const scaledHeight = this.mainSprite ? this.mainSprite.height : this.spriteH;
+    const hw = this.spriteW / 2;
+    const hh = this.spriteH / 2;
 
     this.setInteractive(
-      new Phaser.Geom.Rectangle(
-        -this.spriteW / 2,
-        this.spriteH / 2 - scaledHeight,
-        this.spriteW,
-        scaledHeight
-      ),
-      Phaser.Geom.Rectangle.Contains
+      new Phaser.Geom.Polygon([
+        { x: 0, y: -hh },
+        { x: hw, y: 0 },
+        { x: 0, y: hh },
+        { x: -hw, y: 0 },
+      ]),
+      Phaser.Geom.Polygon.Contains
     );
 
     this.on('pointerover', () => {
@@ -154,9 +168,44 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     });
   }
 
+  private drawHealthBar() {
+    if (!this.healthBarInitialized) return;
+    const pct = this.currentHealth / Math.max(1, this.maxHealth);
+    const barW = this.spriteW * 0.6;
+    const barH = 10;
+    const barY = -this.spriteH / 2 - barH - 6;
+    const color = pct > 0.6 ? 0x22c55e : pct > 0.3 ? 0xeab308 : 0xef4444;
+
+    this.healthBar.clear();
+    this.healthBar.fillStyle(0x000000, 0.7);
+    this.healthBar.fillRoundedRect(-barW / 2, barY, barW, barH, 3);
+    this.healthBar.fillStyle(color, 1);
+    this.healthBar.fillRoundedRect(-barW / 2, barY, barW * pct, barH, 3);
+  }
+
   public takeDamage(amount: number) {
     this.currentHealth = Math.max(0, this.currentHealth - amount);
+    this.flash();
+    this.drawHealthBar();
 
+    if (this.currentHealth <= 0) {
+      this.destroy();
+    }
+  }
+
+  public applyHp(newHp: number) {
+    if (newHp < this.currentHealth) {
+      this.flash();
+    }
+    this.currentHealth = Math.max(0, newHp);
+    this.drawHealthBar();
+
+    if (this.currentHealth <= 0) {
+      this.destroy();
+    }
+  }
+
+  private flash() {
     this.scene.tweens.add({
       targets: this.mainSprite,
       alpha: 0.4,
@@ -164,10 +213,6 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
       yoyo: true,
       repeat: 1,
     });
-
-    if (this.currentHealth <= 0) {
-      this.destroy();
-    }
   }
 
   destroy(fromScene?: boolean) {
@@ -178,6 +223,7 @@ export class BuildingSprite extends Phaser.GameObjects.Container {
     this.hoverRing?.destroy();
     this.selectedTile?.destroy();
     this.upgradeIndicator?.destroy();
+    this.healthBar?.destroy();
     super.destroy(fromScene);
   }
 }

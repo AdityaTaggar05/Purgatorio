@@ -49,6 +49,7 @@ export default function MatchmakingPanel({ open, onClose }: MatchmakingPanelProp
           defenderTerraceLevel: player.terrace_level,
           phase: "deploying",
           deployment: [],
+          defenderLayout: res.data.defender_layout ?? null,
         },
       });
       onClose();

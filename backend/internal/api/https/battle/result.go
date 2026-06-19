@@ -28,7 +28,7 @@ func (h *BattleHandler) HandleResult(w http.ResponseWriter, r *http.Request) {
 	simResult, err := h.Service.GetReplay(r.Context(), battleID)
 	if err != nil {
 		switch {
-		case errors.Is(err, service.ErrBattleNotFound):
+		case errors.Is(err, service.ErrBattleNotFound) || errors.Is(err, service.ErrReplayNotFound):
 			response.NotFound(r.Context(), w, err)
 		default:
 			response.InternalServerError(r.Context(), w, err)

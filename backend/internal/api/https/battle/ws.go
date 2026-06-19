@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const deploymentTimeSecs = 180
+const deploymentTimeSecs = 60
 
 type wsClientMsg struct {
 	Type   string                   `json:"type"`
@@ -113,10 +113,7 @@ func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) 
 	tickBatches := make([][]engine.TickResult, 0)
 	batchSize := 10
 	for i := 0; i < len(allTicks); i += batchSize {
-		end := i + batchSize
-		if end > len(allTicks) {
-			end = len(allTicks)
-		}
+		end := min(i + batchSize, len(allTicks))
 		tickBatches = append(tickBatches, allTicks[i:end])
 	}
 
@@ -124,12 +121,17 @@ func (h *BattleHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) 
 
 	for batchIdx, batch := range tickBatches {
 		batchStart := batchIdx * batchSize
-		conn.WriteJSON(wsServerMsg{
+		err = conn.WriteJSON(wsServerMsg{
 			Type:       "tick_batch",
 			Ticks:      batch,
 			BatchStart: batchStart,
 		})
-		time.Sleep(100 * time.Millisecond)
+		if err != nil {
+			h.Logger.Error("failed to write tick batch", "error", err)
+			return
+		}
+		
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	outcome, err := h.Service.ResolveAndStore(r.Context(), battleID, sim, deployments)

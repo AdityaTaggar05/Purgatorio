@@ -33,10 +33,17 @@ type BattleInput struct {
 	MaxDuration int
 }
 
+type PositionChange struct {
+	EntityID string `json:"entity_id"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+}
+
 type TickResult struct {
-	Tick      int        `json:"tick"`
-	HPChanges []HPChange `json:"hp_changes"`
-	Done      bool       `json:"done,omitempty"`
+	Tick      int              `json:"tick"`
+	HPChanges []HPChange       `json:"hp_changes"`
+	Positions []PositionChange `json:"positions,omitempty"`
+	Done      bool             `json:"done,omitempty"`
 }
 
 type HPChange struct {

@@ -352,7 +352,7 @@ func main() {
 			log.Fatalf("insert game_state %s: %v", u.username, err)
 		}
 
-		// user_army: build troops JSONB and used_capacity
+		// user_army: build troops JSONB, used_capacity, and max_capacity
 		usedCapacity := 0
 		var troopsJSON strings.Builder; troopsJSON.WriteString("{")
 		first := true
@@ -370,10 +370,12 @@ func main() {
 		}
 		troopsJSON.WriteString("}")
 
+		maxCapacity := 50 + u.terraceLevel*25
+
 		_, err = tx.Exec(ctx, `
-			INSERT INTO user_army (user_id, troops, used_capacity)
-			VALUES ($1, $2::jsonb, $3)
-		`, authID, troopsJSON.String(), usedCapacity)
+			INSERT INTO user_army (user_id, troops, used_capacity, max_capacity)
+			VALUES ($1, $2::jsonb, $3, $4)
+		`, authID, troopsJSON.String(), usedCapacity, maxCapacity)
 		if err != nil {
 			log.Fatalf("insert user_army %s: %v", u.username, err)
 		}

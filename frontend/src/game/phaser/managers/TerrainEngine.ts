@@ -15,18 +15,23 @@ export class TerrainEngine {
     this.groundLayer.setDepth(0);
   }
 
-  public generateGroundGrid(tilesW: number, tilesH: number) {
+  public generateGroundGrid(tilesW: number, tilesH: number, padding: number) {
+    const minX = -padding;
+    const minY = -padding;
+    const maxX = tilesW + padding;
+    const maxY = tilesH + padding;
+
     const tilePositions: Array<{ x: number; y: number; gridX: number; gridY: number; edge: boolean }> = [];
 
-    for (let y = 0; y < tilesH; y++) {
-      for (let x = 0; x < tilesW; x++) {
+    for (let y = minY; y < maxY; y++) {
+      for (let x = minX; x < maxX; x++) {
         const screenPos = IsoMath.tileToScreen(x, y);
         tilePositions.push({
           x: screenPos.x,
           y: screenPos.y,
           gridX: x,
           gridY: y,
-          edge: x === tilesW - 1 || y === tilesH - 1,
+          edge: x === maxX - 1 || y === maxY - 1,
         });
       }
     }

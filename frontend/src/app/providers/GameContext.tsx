@@ -13,6 +13,7 @@ export interface ActiveBattle {
   defenderTerraceLevel: number;
   phase: BattlePhase;
   deployment: TroopDeployment[];
+  defenderLayout: BaseLayout | null;
   outcome?: "victory" | "defeat" | "threshold_failed";
   destruction?: number;
   loot?: number;

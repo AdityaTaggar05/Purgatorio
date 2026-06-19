@@ -28,6 +28,16 @@ type Simulation struct {
 func NewSimulation(input BattleInput) *Simulation {
 	rng := rand.New(rand.NewSource(input.Seed))
 
+	ticksPerSec := input.TicksPerSec
+	if ticksPerSec <= 0 {
+		ticksPerSec = 20
+	}
+
+	maxTick := input.MaxDuration
+	if maxTick <= 0 {
+		maxTick = 180 * ticksPerSec
+	}
+
 	sim := &Simulation{
 		rng:         rng,
 		maxTick:     input.MaxDuration,
@@ -44,17 +54,17 @@ func NewSimulation(input BattleInput) *Simulation {
 		}
 		for i := 0; i < dep.Count; i++ {
 			sim.idSeq++
-			id := fmt.Sprintf("t%d", sim.idSeq)
+			id := fmt.Sprintf("troop_%s_%d", dep.TroopType, sim.idSeq)
 			sim.troops = append(sim.troops, &troopState{
-				id:       id,
+				id:        id,
 				troopType: dep.TroopType,
-				hp:       float64(stats.HP),
-				maxHP:    stats.HP,
-				dps:      stats.DPS,
-				speed:    stats.Speed,
-				range_:   stats.Range,
-				pos:      dep.Position,
-				alive:    true,
+				hp:        float64(stats.HP),
+				maxHP:     stats.HP,
+				dps:       stats.DPS,
+				speed:     stats.Speed,
+				range_:    stats.Range,
+				pos:       dep.Position,
+				alive:     true,
 			})
 			sim.initHP[id] = stats.HP
 		}
@@ -94,9 +104,12 @@ func (s *Simulation) NextTick() TickResult {
 	hpChanges := s.collectHPChanges()
 	done := s.checkDone()
 
+	positions := s.collectPositions()
+
 	return TickResult{
 		Tick:      s.tick,
 		HPChanges: hpChanges,
+		Positions: positions,
 		Done:      done,
 	}
 }
@@ -226,6 +239,20 @@ func (s *Simulation) collectHPChanges() []HPChange {
 	return changes
 }
 
+func (s *Simulation) collectPositions() []PositionChange {
+	positions := make([]PositionChange, 0, len(s.troops))
+	for _, t := range s.troops {
+		if t.alive {
+			positions = append(positions, PositionChange{
+				EntityID: t.id,
+				X:        t.pos.X,
+				Y:        t.pos.Y,
+			})
+		}
+	}
+	return positions
+}
+
 func (s *Simulation) checkDone() bool {
 	if s.done {
 		return true
@@ -303,6 +330,9 @@ func (s *Simulation) destructionPercent() float64 {
 	totalMaxHP := 0.0
 	totalDamage := 0.0
 	for _, b := range s.buildings {
+		if b.buildingType == "bastion" {
+			continue
+		}
 		totalMaxHP += float64(b.maxHP)
 		totalDamage += float64(b.maxHP) - b.hp
 	}

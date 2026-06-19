@@ -1,3 +1,5 @@
+import type { BaseLayout } from "./building";
+
 export interface MatchListEntry {
   user_id: string;
   username: string;
@@ -7,6 +9,7 @@ export interface MatchListEntry {
 export interface InitiateResponse {
   battle_id: string;
   defender_name: string;
+  defender_layout?: BaseLayout;
 }
 
 export interface BattleResultResponse {
@@ -24,9 +27,16 @@ export interface TroopDeployment {
   count: number;
 }
 
+export interface PositionChange {
+  entity_id: string;
+  x: number;
+  y: number;
+}
+
 export interface TickResult {
   tick: number;
   hp_changes: HpChange[];
+  positions: PositionChange[];
   done?: boolean;
 }
 

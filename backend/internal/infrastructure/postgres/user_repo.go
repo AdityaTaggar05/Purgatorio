@@ -138,7 +138,7 @@ func (r *UserRepository) InitializeNewUser(ctx context.Context, userID uuid.UUID
 	}
 
 	_, err = tx.Exec(ctx,
-		`INSERT INTO user_army (user_id, max_capacity) VALUES ($1, 50)`, userID,
+		`INSERT INTO user_army (user_id, troops, used_capacity, max_capacity) VALUES ($1, '{}'::jsonb, 0, 50)`, userID,
 	)
 	if err != nil {
 		return err
@@ -252,4 +252,15 @@ func (r *UserRepository) UpdateTerraceLevel(ctx context.Context, id uuid.UUID, l
 		id, level,
 	)
 	return err
+}
+
+func (r *UserRepository) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error) {
+	var c model.UserCombat
+	c.UserID = id
+	err := r.DB.QueryRow(ctx,
+		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration
+		 FROM user_combat WHERE user_id = $1`,
+		id,
+	).Scan(&c.SinMeter, &c.LastAttackAt, &c.ShieldExpiresAt, &c.ShieldMaxDuration)
+	return c, err
 }

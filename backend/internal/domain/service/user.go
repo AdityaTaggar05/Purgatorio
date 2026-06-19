@@ -33,6 +33,10 @@ func (s *UserService) GetEconomy(ctx context.Context, id uuid.UUID) (model.UserE
 	return s.UserRepo.GetEconomy(ctx, id)
 }
 
+func (s *UserService) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error) {
+	return s.UserRepo.GetCombat(ctx, id)
+}
+
 func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
 	eco, err := s.UserRepo.GetEconomy(ctx, id)
 	if err != nil {
@@ -68,6 +72,7 @@ func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.U
 	}
 
 	eco.Penitence += collectedAmt + eco.CollectorPendingPenitence
+	eco.CollectorPendingPenitence = 0
 
 	if eco.Penitence > eco.MaxPenitence {
 		eco.CollectorPendingPenitence = eco.Penitence - eco.MaxPenitence

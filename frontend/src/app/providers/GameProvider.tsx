@@ -43,10 +43,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       const checkInRes = await api.post<{ completed_upgrades: { building_id: string; x: number; y: number; from_level: number; to_level: number }[] }>("/base/check-in");
 
-      const [economyRes, layoutRes, armyRes] = await Promise.all([
+      const [economyRes, layoutRes, armyRes, combatRes] = await Promise.all([
         api.get<{ penitence: number; grace: number; max_penitence: number; overflow_penitence?: number }>("/user/economy"),
         api.get<{ buildings: unknown[]; grid_w: number; grid_h: number }>("/base/layout"),
         api.get<{ troops: Record<string, number>; used_capacity: number; max_capacity: number }>("/army/my-troops"),
+        api.get<{ sin_meter: number }>("/user/combat"),
       ]);
 
       if (cancelled) return;
@@ -59,6 +60,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
       if (armyRes.success) {
         dispatch({ type: "SET_ARMY", payload: armyRes.data as GameState["army"] });
+      }
+      if (combatRes.success) {
+        dispatch({ type: "SET_SIN_METER", payload: combatRes.data.sin_meter });
       }
 
       if (checkInRes.success && checkInRes.data.completed_upgrades.length > 0) {

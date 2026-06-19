@@ -17,8 +17,27 @@ type initiateRequestDTO struct {
 }
 
 type initiateResponseDTO struct {
-	BattleID     uuid.UUID `json:"battle_id"`
-	DefenderName string    `json:"defender_name"`
+	BattleID     uuid.UUID              `json:"battle_id"`
+	DefenderName string                 `json:"defender_name"`
+	DefenderLayout *BaseLayoutDTO       `json:"defender_layout,omitempty"`
+}
+
+type buildingDTO struct {
+	ID        string `json:"id"`
+	BuildingID string `json:"building_id"`
+	Name      string `json:"name"`
+	Category  string `json:"category"`
+	Level     int    `json:"level"`
+	X         int    `json:"x"`
+	Y         int    `json:"y"`
+	Size      int    `json:"size"`
+	HP        int    `json:"hp"`
+}
+
+type BaseLayoutDTO struct {
+	Buildings []buildingDTO `json:"buildings"`
+	GridW     int           `json:"grid_w"`
+	GridH     int           `json:"grid_h"`
 }
 
 func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +60,7 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	battleID, defenderName, err := h.Service.InitiateBattle(r.Context(), attackerID, defenderID)
+	result, err := h.Service.InitiateBattle(r.Context(), attackerID, defenderID)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrCannotAttackSelf):
@@ -58,8 +77,39 @@ func (h *BattleHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	gridW := 30
+	gridH := 30
+	for _, b := range result.Buildings {
+		if int(b.Position.X)+b.Size > gridW {
+			gridW = int(b.Position.X) + b.Size
+		}
+		if int(b.Position.Y)+b.Size > gridH {
+			gridH = int(b.Position.Y) + b.Size
+		}
+	}
+
+	buildingDTOs := make([]buildingDTO, len(result.Buildings))
+	for i, b := range result.Buildings {
+		buildingDTOs[i] = buildingDTO{
+			ID:         b.ID,
+			BuildingID: b.BuildingType,
+			Name:       b.BuildingType,
+			Category:   b.Category,
+			Level:      b.Level,
+			X:          int(b.Position.X),
+			Y:          int(b.Position.Y),
+			Size:       b.Size,
+			HP:         b.HP,
+		}
+	}
+
 	response.Created(w, initiateResponseDTO{
-		BattleID:     battleID,
-		DefenderName: defenderName,
+		BattleID:     result.BattleID,
+		DefenderName: result.DefenderName,
+		DefenderLayout: &BaseLayoutDTO{
+			Buildings: buildingDTOs,
+			GridW:     gridW,
+			GridH:     gridH,
+		},
 	}, "battle initiated")
 }

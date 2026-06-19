@@ -12,6 +12,7 @@ export interface BattleEndPayload {
 type SocketState = "connecting" | "open" | "closed" | "error";
 
 type ServerMessage =
+  | { type: "deployment_start"; time_left: number }
   | { type: "tick_batch"; ticks: TickResult[]; batch_start: number }
   | ({ type: "battle_end" } & BattleEndPayload)
   | { type: "error"; message: string };
@@ -51,13 +52,17 @@ export class BattleSocket {
     this.ws.onopen = () => {
       this._state = "open";
       this.openCallbacks.forEach((cb) => cb());
-      this.startDeployCountdown();
     };
 
     this.ws.onmessage = (event) => {
       try {
         const msg: ServerMessage = JSON.parse(event.data);
         switch (msg.type) {
+          case "deployment_start":
+            this._deployCountdown = msg.time_left;
+            this.deployCountdownCallbacks.forEach((cb) => cb(msg.time_left));
+            this.startDeployCountdown();
+            break;
           case "tick_batch":
             this.tickBatchCallbacks.forEach((cb) => cb(msg.ticks, msg.batch_start));
             break;
@@ -103,8 +108,13 @@ export class BattleSocket {
 
   sendDeploy(deployment: TroopDeployment[]): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.stopDeployCountdown();
     this.ws.send(JSON.stringify({ type: "deploy", troops: deployment }));
+  }
+
+  sendDone(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.stopDeployCountdown();
+    this.ws.send(JSON.stringify({ type: "done" }));
   }
 
   disconnect(): void {
@@ -135,8 +145,6 @@ export class BattleSocket {
   }
 
   private startDeployCountdown(): void {
-    this._deployCountdown = 30;
-    this.deployCountdownCallbacks.forEach((cb) => cb(this._deployCountdown));
     this.deployTimer = setInterval(() => {
       this._deployCountdown--;
       this.deployCountdownCallbacks.forEach((cb) => cb(this._deployCountdown));
