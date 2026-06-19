@@ -90,6 +90,7 @@ type troopState struct {
 	pos      Point
 	targetID string
 	alive    bool
+	path     []Point // A* waypoints toward current target
 }
 
 type buildingState struct {

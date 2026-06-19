@@ -122,8 +122,10 @@ func (s *Simulation) retargetTroops() {
 		if t.targetID == "" || !s.buildingAliveByID(t.targetID) {
 			if b := findNearestBuildingForTroop(t, s.buildings); b != nil {
 				t.targetID = b.id
+				t.path = nil // Clear old path for new target
 			} else {
 				t.targetID = ""
+				t.path = nil
 			}
 		}
 	}
@@ -150,9 +152,28 @@ func (s *Simulation) moveTroops(step float64) {
 		center := buildingCenter(target.pos, target.size)
 		dist := distance(t.pos, center)
 		speedStep := t.speed * step
+
 		if dist <= t.range_ {
+			t.path = nil
 			continue
 		}
+
+		if len(t.path) == 0 {
+			t.path = s.findPathForTroop(t, target)
+		}
+
+		if len(t.path) > 0 {
+			wp := t.path[0]
+			wpDist := distance(t.pos, wp)
+			if wpDist <= speedStep {
+				t.pos = wp
+				t.path = t.path[1:]
+			} else {
+				moveToward(t, wp, speedStep)
+			}
+			continue
+		}
+
 		if dist-speedStep <= t.range_ {
 			moveToward(t, center, dist-t.range_)
 		} else {
