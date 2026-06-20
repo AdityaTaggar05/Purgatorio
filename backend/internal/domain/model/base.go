@@ -54,6 +54,8 @@ type PlacedBuildingResponse struct {
 	AttackRange     *float64         `json:"attack_range,omitempty"`
 	ProductionRate  *int             `json:"production_rate,omitempty"`
 	StorageCapacity *int             `json:"storage_capacity,omitempty"`
+	UpgradeCost     *int             `json:"upgrade_cost,omitempty"`
+	UpgradeTime     *int             `json:"upgrade_time,omitempty"`
 	Metadata        *BuildingMetadata `json:"metadata,omitempty"`
 }
 

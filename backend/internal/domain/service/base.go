@@ -48,6 +48,12 @@ func (s *BaseService) GetLayout(ctx context.Context, userID uuid.UUID) (*model.B
 			continue
 		}
 
+		var upgradeCost, upgradeTime *int
+		if _, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, pb.BuildingID, pb.Level+1); err == nil {
+			upgradeCost = &stats.UpgradeCost
+			upgradeTime = &stats.UpgradeTime
+		}
+
 		response.Buildings = append(response.Buildings, model.PlacedBuildingResponse{
 			BuildingID:      pb.BuildingID,
 			Name:            building.Name,
@@ -61,6 +67,8 @@ func (s *BaseService) GetLayout(ctx context.Context, userID uuid.UUID) (*model.B
 			AttackRange:     stats.AttackRange,
 			ProductionRate:  stats.ProductionRate,
 			StorageCapacity: stats.StorageCapacity,
+			UpgradeCost:     upgradeCost,
+			UpgradeTime:     upgradeTime,
 			Metadata:        pb.Metadata,
 		})
 	}
@@ -240,9 +248,13 @@ func (s *BaseService) UpgradeBuilding(ctx context.Context, userID uuid.UUID, bui
 		return purgerr.Wrap(ErrUpgradeAlreadyActive, ErrUpgradeAlreadyActive)
 	}
 
-	nextLevel := pb.Level + 1
-	nextStats, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, buildingID, nextLevel)
+	currentStats, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, buildingID, pb.Level)
 	if err != nil {
+		return purgerr.Wrap(ErrBuildingNotFound, err)
+	}
+
+	nextLevel := pb.Level + 1
+	if _, err := s.BaseLayoutRepo.GetBuildingLevelStats(ctx, buildingID, nextLevel); err != nil {
 		return purgerr.Wrap(ErrMaxLevelReached, err)
 	}
 
@@ -251,17 +263,17 @@ func (s *BaseService) UpgradeBuilding(ctx context.Context, userID uuid.UUID, bui
 		return purgerr.Wrap(ErrUserNotFound, err)
 	}
 
-	if eco.Penitence < nextStats.UpgradeCost {
+	if eco.Penitence < currentStats.UpgradeCost {
 		return purgerr.Wrap(ErrInsufficientResources, ErrInsufficientResources)
 	}
 
-	eco.Penitence -= nextStats.UpgradeCost
+	eco.Penitence -= currentStats.UpgradeCost
 
 	if err := s.UserRepo.UpdateEconomy(ctx, eco); err != nil {
 		return purgerr.Wrap(fmt.Errorf("failed to deduct upgrade cost"), err)
 	}
 
-	upgradeEndsAt := time.Now().Add(time.Duration(nextStats.UpgradeTime) * time.Second)
+	upgradeEndsAt := time.Now().Add(time.Duration(currentStats.UpgradeTime) * time.Second)
 	if err := s.BaseLayoutRepo.StartUpgrade(ctx, userID, buildingID, x, y, upgradeEndsAt); err != nil {
 		return purgerr.Wrap(fmt.Errorf("failed to start upgrade"), err)
 	}
