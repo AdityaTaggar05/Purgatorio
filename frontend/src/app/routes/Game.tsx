@@ -83,19 +83,6 @@ export default function GameDashboard() {
 
   const handleAttack = () => setMatchmakingOpen(true);
 
-  const handleCheckIn = useCallback(async () => {
-    const res = await baseApi.checkIn(api);
-    if (res.success) {
-      await refetchLayout();
-      if (res.data.completed_upgrades.length > 0) {
-        const names = res.data.completed_upgrades
-          .map(u => `${u.building_id} Lv.${u.from_level} → ${u.to_level}`)
-          .join(", ");
-        setSnackbarMsg(`Upgrades completed: ${names}`);
-      }
-    }
-  }, [api, refetchLayout]);
-
   const handleCollect = useCallback(async () => {
     const res = await economyApi.collectResources(api);
     if (res.success) {
@@ -116,7 +103,6 @@ export default function GameDashboard() {
         onLogoutClick={logout}
         onAttackClick={handleAttack}
         onArmyClick={() => setArmyOpen(true)}
-        onCheckInClick={handleCheckIn}
         onCollectClick={handleCollect}
       />
 

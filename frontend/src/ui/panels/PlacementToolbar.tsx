@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useGame } from "../../hooks/useGame";
 import { phaserEvents } from "../../game/phaser/events";
 import * as shopApi from "../../api/endpoints/shop";
@@ -39,7 +39,7 @@ function UpgradeTimer({ endsAt }: { endsAt: string }) {
           {minutes}:{String(secs).padStart(2, "0")} remaining
         </div>
       ) : (
-        <div className="font-bold text-amber-400">Ready — check in!</div>
+        <div className="font-bold text-amber-400">Completing...</div>
       )}
     </div>
   );

@@ -9,7 +9,6 @@ export default function GameHud({
   onLogoutClick,
   onAttackClick,
   onArmyClick,
-  onCheckInClick,
   onCollectClick
 }: HudProps) {
 
@@ -135,17 +134,6 @@ export default function GameHud({
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          </button>
-
-          {/* Check In Button */}
-          <button
-            onClick={onCheckInClick}
-            title="Complete Upgrades"
-            className="flex items-center justify-center w-10 h-10 bg-purgatory-card border border-teal-900/40 hover:border-teal-600/60 text-gray-500 hover:text-teal-400 rounded cursor-pointer transition-colors shadow-lg"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </button>
 
