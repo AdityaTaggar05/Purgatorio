@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useGame } from "../../hooks/useGame";
 import { phaserEvents } from "../../game/phaser/events";
 import * as shopApi from "../../api/endpoints/shop";
@@ -18,15 +18,16 @@ function formatTime(seconds: number): string {
 }
 
 function UpgradeTimer({ endsAt }: { endsAt: string }) {
-  const [, setTick] = useState(0);
+  const endMs = new Date(endsAt).getTime();
+  const [remaining, setRemaining] = useState(() => Date.now())
 
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 500);
-    return () => clearInterval(id);
-  }, []);
+    const interval = setInterval(() => {
+      setRemaining(Math.max(0, endMs - Date.now()))
+    })
+    return () => clearInterval(interval);
+  }, [endMs]);
 
-  const endMs = new Date(endsAt).getTime();
-  const remaining = Math.max(0, endMs - Date.now());
   const seconds = Math.ceil(remaining / 1000);
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
