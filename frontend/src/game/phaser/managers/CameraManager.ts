@@ -5,9 +5,6 @@ export class CameraManager {
   private cam: Phaser.Cameras.Scene2D.Camera;
   private isPanning = false;
 
-  private mapCenterX = 0;
-  private mapCenterY = 0;
-
   constructor(scene: Phaser.Scene) {
     this.cam = scene.cameras.main;
     this.cam.setBackgroundColor('#111111');
@@ -32,7 +29,8 @@ export class CameraManager {
       this.clampScroll();
     });
 
-    scene.input.on('wheel', (_: unknown, __: unknown, ___: unknown, deltaY: number) => {
+    scene.input.on('wheel', (pointer: Phaser.Input.Pointer, __: unknown, ___: unknown, deltaY: number) => {
+      pointer.event.preventDefault();
       const newZoom = Phaser.Math.Clamp(this.cam.zoom - deltaY * 0.001, 0.05, 0.6);
       this.cam.setZoom(newZoom);
       this.clampScroll();
@@ -65,19 +63,12 @@ export class CameraManager {
     const minY = Math.min(...corners.map((c) => c.y)) - halfH - padY;
     const maxY = Math.max(...corners.map((c) => c.y)) + halfH + padY;
 
-    this.mapCenterX = (minX + maxX) / 2;
-    this.mapCenterY = (minY + maxY) / 2;
-
     this.cam.setBounds(minX, minY, maxX - minX, maxY - minY);
   }
 
-  public centerOnMap(cx?: number, cy?: number) {
+  public centerOnMap() {
     this.fitZoomToBounds();
-    if (cx !== undefined && cy !== undefined) {
-      this.cam.centerOn(cx, cy);
-    } else {
-      this.cam.centerOn(this.mapCenterX, this.mapCenterY);
-    }
+    this.cam.centerOn(0, 0)
     this.clampScroll();
   }
 
