@@ -5,6 +5,18 @@ import * as shopApi from "../../api/endpoints/shop";
 import * as baseApi from "../../api/endpoints/base";
 import type { ShopItem, PlacedBuilding } from "../../types/building";
 
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  if (hours < 24) return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+}
+
 function UpgradeTimer({ endsAt }: { endsAt: string }) {
   const [, setTick] = useState(0);
 
@@ -215,10 +227,14 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
               </div>
             )}
 
-            {!buildingMenu.metadata?.upgrade_ends_at && (
+            {!buildingMenu.metadata?.upgrade_ends_at && buildingMenu.upgrade_cost != null && (
               <div className="mb-3 text-[10px] text-amber-500/70">
-                Next upgrade: {buildingMenu.upgrade_cost ?? Math.max(50, buildingMenu.level * 75)} penitence · {buildingMenu.upgrade_time ?? buildingMenu.level * 30}m
+                Next upgrade: {buildingMenu.upgrade_cost} penitence · {formatTime(buildingMenu.upgrade_time ?? 0)}
               </div>
+            )}
+
+            {!buildingMenu.metadata?.upgrade_ends_at && buildingMenu.upgrade_cost == null && (
+              <div className="mb-3 text-[10px] text-gray-500">MAX LEVEL — no further upgrades</div>
             )}
 
             {buildingMenu.metadata?.upgrade_ends_at && (
@@ -236,7 +252,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
                 <button
                   onClick={handleUpgrade}
                   className="flex-1 px-3 py-1.5 border border-amber-500/40 text-amber-400 rounded text-xs uppercase tracking-wider font-bold hover:bg-amber-500/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  disabled={(state.economy?.penitence ?? 0) < (buildingMenu.upgrade_cost ?? Math.max(50, buildingMenu.level * 75))}
+                  disabled={buildingMenu.upgrade_cost == null || (state.economy?.penitence ?? 0) < buildingMenu.upgrade_cost}
                 >
                   Upgrade
                 </button>
