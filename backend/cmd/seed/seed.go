@@ -152,8 +152,8 @@ func main() {
 
 	levels := []levelDef{
 		// Bastion (wall): only HP scales, no damage/production/storage/range
-		{"bastion", 1, intp(300), nil, nil, nil, floatp(0), 50, 60},
-		{"bastion", 2, intp(500), nil, nil, nil, floatp(0), 150, 300},
+		{"bastion", 1, intp(225), nil, nil, nil, floatp(0), 50, 15},
+		{"bastion", 2, intp(400), nil, nil, nil, floatp(0), 150, 300},
 		{"bastion", 3, intp(800), nil, nil, nil, floatp(0), 400, 900},
 		{"bastion", 4, intp(1200), nil, nil, nil, floatp(0), 900, 1800},
 
@@ -165,7 +165,7 @@ func main() {
 		{"angel-spire", 5, intp(1400), intp(50), nil, nil, floatp(5.0), 9000, 14400},
 
 		// Lament Basin: resource collector, production_rate in penitence/sec (int), no attack range
-		{"lament-basin", 1, intp(400), nil, intp(2), intp(500), floatp(0), 300, 600},
+		{"lament-basin", 1, intp(300), nil, intp(2), intp(500), floatp(0), 300, 600},
 		{"lament-basin", 2, intp(550), nil, intp(4), intp(1000), floatp(0), 800, 1800},
 		{"lament-basin", 3, intp(700), nil, intp(6), intp(1800), floatp(0), 2000, 3600},
 		{"lament-basin", 4, intp(900), nil, intp(8), intp(3000), floatp(0), 4500, 7200},
@@ -212,11 +212,11 @@ func main() {
 	}
 
 	troops := []troopDef{
-		{"stone-bearer", "Stone Bearer", 80, 6, 300, 12, 1.0, 1.0, "defense"},
-		{"ashwalker", "Ashwalker", 60, 3, 80, 25, 2.0, 2.0, "defense"},
-		{"hoarder", "Hoarder", 50, 4, 120, 18, 1.5, 1.5, "resource"},
-		{"ravager", "Ravager", 90, 7, 200, 40, 1.2, 1.0, "defense"},
-		{"coveter", "Coveter", 30, 2, 60, 15, 2.5, 3.0, "any"},
+		{"stone-bearer", "Stone Bearer", 80, 6, 200, 12, 1.0, 1.0, "defense"},
+		{"ashwalker", "Ashwalker", 60, 3, 60, 25, 2.0, 2.0, "defense"},
+		{"hoarder", "Hoarder", 50, 4, 100, 18, 1.5, 1.5, "resource"},
+		{"ravager", "Ravager", 90, 7, 160, 40, 1.2, 1.0, "defense"},
+		{"coveter", "Coveter", 30, 2, 40, 15, 2.5, 3.0, "any"},
 	}
 
 	for _, t := range troops {
@@ -253,15 +253,15 @@ func main() {
 			username:     "virgil",
 			password:     "Password123!",
 			xp:           1200,
-			terraceLevel: 3,
+			terraceLevel: 1,
 			penitence:    2500,
 			grace:        120,
-			maxPenitence: 8000,
+			maxPenitence: 5000,
 			sinMeter:     10,
 			troops: map[string]int{
 				"stone-bearer": 4,
-				"ashwalker":    6,
-				"coveter":      8,
+				"ashwalker":    2,
+				"coveter":      4,
 			},
 		},
 		{
@@ -269,10 +269,10 @@ func main() {
 			username:     "beatrice",
 			password:     "Password123!",
 			xp:           300,
-			terraceLevel: 2,
+			terraceLevel: 1,
 			penitence:    900,
 			grace:        40,
-			maxPenitence: 6000,
+			maxPenitence: 5000,
 			sinMeter:     0,
 			troops: map[string]int{
 				"hoarder":    3,
