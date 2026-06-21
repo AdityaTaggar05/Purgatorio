@@ -351,18 +351,17 @@ func (s *Simulation) Result() BattleResult {
 }
 
 func (s *Simulation) destructionPercent() float64 {
-	totalMaxHP := 0.0
-	totalDamage := 0.0
+	var destroyed, total float64
+
 	for _, b := range s.buildings {
 		if b.buildingType == "bastion" {
 			continue
 		}
-		totalMaxHP += float64(b.maxHP)
-		totalDamage += float64(b.maxHP) - b.hp
+		total++
+		if !b.alive {
+			destroyed++
+		}
 	}
-	if totalMaxHP == 0 {
-		return 0
-	}
-	pct := (totalDamage / totalMaxHP) * 100.0
-	return math.Round(pct*10) / 10
+
+	return math.Round(100 * destroyed / total)
 }
