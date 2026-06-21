@@ -46,6 +46,7 @@ func NewSimulation(input BattleInput) *Simulation {
 		changes:     make(map[string]hpRecord),
 		initHP:      make(map[string]int),
 		seed:        input.Seed,
+		endTick: input.EndTick,
 	}
 
 	for _, dep := range input.Deployments {
@@ -93,6 +94,10 @@ func NewSimulation(input BattleInput) *Simulation {
 func (s *Simulation) NextTick() TickResult {
 	s.tick++
 	s.changes = make(map[string]hpRecord)
+
+	if s.endTick > 0 && s.tick > s.endTick {
+		s.done = true
+	}
 
 	s.retargetTroops()
 

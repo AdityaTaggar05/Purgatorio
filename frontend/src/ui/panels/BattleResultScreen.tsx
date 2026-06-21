@@ -85,7 +85,7 @@ export default function BattleResultScreen({ battle }: BattleResultScreenProps) 
 
         <div className="bg-purgatory-card border border-purgatory-border rounded p-4">
           <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Duration</div>
-          <div className="text-2xl font-bold text-gray-200">{(duration / 10).toFixed(1)}s</div>
+          <div className="text-2xl font-bold text-gray-200">{(duration / 20).toFixed(1)}s</div>
         </div>
       </div>
 
