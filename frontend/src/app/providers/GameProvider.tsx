@@ -4,10 +4,13 @@ import { ApiClient } from "../../api/client";
 import { useAuth } from "../../hooks/useAuth";
 import { API_BASE_URL } from "../../config";
 import type { Troop } from "../../types/army";
+import * as shopApi from "../../api/endpoints/shop";
+import type { ShopItem } from "../../types/shop";
 
 const initialState: GameState = {
   economy: null,
   layout: null,
+  inventory: null,
   troopCatalog: null,
   army: null,
   sinMeter: 0,
@@ -56,7 +59,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_ECONOMY", payload: economyRes.data });
       }
       if (layoutRes.success) {
-        dispatch({ type: "SET_LAYOUT", payload: layoutRes.data as GameState["layout"] });
+        const layout = layoutRes.data as GameState["layout"]
+        dispatch({ type: "SET_LAYOUT", payload: layout });
+
+        shopApi.getShop(api).then((res) => {
+          const placedCounts = new Map<string, number>();
+
+          layout?.buildings.forEach(b => {
+            placedCounts.set(b.building_id, (placedCounts.get(b.building_id) ?? 0) + 1);
+          });
+
+          const ownedItems = res.data.items.filter(item => item.current_owned > 0);
+          const placeableItems = ownedItems.filter(item => item.current_owned > (placedCounts.get(item.building.id) ?? 0));
+
+          const inventory = new Map<ShopItem, number>();
+
+          placeableItems.forEach((item) => {
+            inventory.set(item, item.current_owned - (placedCounts.get(item.building.id) ?? 0))
+          })
+
+          dispatch({ type: "SET_INVENTORY", payload: inventory })
+        })
       }
       if (armyRes.success) {
         dispatch({ type: "SET_ARMY", payload: armyRes.data as GameState["army"] });

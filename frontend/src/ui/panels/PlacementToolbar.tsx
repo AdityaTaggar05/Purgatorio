@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGame } from "../../hooks/useGame";
 import { phaserEvents } from "../../game/phaser/events";
-import * as shopApi from "../../api/endpoints/shop";
 import * as baseApi from "../../api/endpoints/base";
 import type { ShopItem, PlacedBuilding } from "../../types/building";
 
@@ -54,23 +53,11 @@ interface PlacementToolbarProps {
 
 export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutChanged }: PlacementToolbarProps) {
   const { state, api } = useGame();
-  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
-  useEffect(() => {
-    shopApi.getShop(api).then(res => {
-      if (res.success) setShopItems(res.data.items);
-    });
-  }, [api]);
+  const layout = state.layout
 
-  const layout = state.layout;
-  const placedCounts = new Map<string, number>();
-  layout?.buildings.forEach(b => {
-    placedCounts.set(b.building_id, (placedCounts.get(b.building_id) ?? 0) + 1);
-  });
-
-  const ownedItems = shopItems.filter(item => item.current_owned > 0);
-  const placeableItems = ownedItems.filter(item => item.current_owned > (placedCounts.get(item.building.id) ?? 0));
+  const inventory = state.inventory ?? new Map<ShopItem, number>();
 
   const cancelMode = () => {
     phaserEvents.mode = "none";
@@ -96,12 +83,18 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
 
       const occupied = layout?.buildings.some(b => {
         return pos.x < b.x + b.size && pos.x + item.size > b.x &&
-               pos.y < b.y + b.size && pos.y + item.size > b.y;
+          pos.y < b.y + b.size && pos.y + item.size > b.y;
       });
       if (occupied) return;
 
       const res = await baseApi.placeBuilding(api, item.id, pos.x, pos.y);
       if (res.success) {
+        if (state.inventory) for (const b of state.inventory.keys()) {
+          if (b.building.id === item.id) {
+            if (state.inventory.get(b) === 1) state.inventory.delete(b);
+            else state.inventory.set(b, (state.inventory.get(b) ?? 1) - 1);
+          }
+        }
         await onLayoutChanged();
         cancelMode();
       }
@@ -121,7 +114,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
       const occupied = layout?.buildings.some(b => {
         if (b.x === buildingMenu.x && b.y === buildingMenu.y) return false;
         return pos.x < b.x + b.size && pos.x + buildingMenu.size > b.x &&
-               pos.y < b.y + b.size && pos.y + buildingMenu.size > b.y;
+          pos.y < b.y + b.size && pos.y + buildingMenu.size > b.y;
       });
       if (occupied) return;
 
@@ -161,10 +154,10 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
         {/* Inventory tray */}
         {inventoryOpen && !activeMode && (
           <div className="bg-purgatory-card/95 backdrop-blur-md border border-purgatory-border rounded-lg p-3 shadow-2xl flex gap-2 flex-wrap max-w-lg">
-            {placeableItems.length === 0 && (
+            {inventory.size === 0 && (
               <div className="text-xs text-gray-500 px-2 py-1">No buildings to place</div>
             )}
-            {placeableItems.map(item => (
+            {[...inventory].map(([item, count]) => (
               <button
                 key={item.building.id}
                 onClick={() => enterPlaceMode(item.building)}
@@ -172,7 +165,7 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
               >
                 <div className="text-xs text-gray-300 font-bold">{item.building.name}</div>
                 <div className="text-[9px] text-gray-500">
-                  {item.current_owned - (placedCounts.get(item.building.id) ?? 0)}×
+                  {count}×
                 </div>
               </button>
             ))}
@@ -182,13 +175,12 @@ export default function PlacementToolbar({ buildingMenu, onCloseMenu, onLayoutCh
         <div className="flex gap-2 bg-purgatory-card/95 backdrop-blur-md border border-purgatory-border rounded-lg p-2 shadow-2xl">
           <button
             onClick={() => { cancelMode(); setInventoryOpen(!inventoryOpen); }}
-            className={`px-3 py-1.5 rounded text-xs uppercase tracking-widest font-bold transition-all ${
-              inventoryOpen
-                ? "bg-amber-500/10 border border-amber-500/40 text-amber-400"
-                : "border border-purgatory-border text-gray-400 hover:text-gray-200 hover:border-gray-600"
-            }`}
+            className={`px-3 py-1.5 rounded text-xs uppercase tracking-widest font-bold transition-all ${inventoryOpen
+              ? "bg-amber-500/10 border border-amber-500/40 text-amber-400"
+              : "border border-purgatory-border text-gray-400 hover:text-gray-200 hover:border-gray-600"
+              }`}
           >
-            {placeableItems.length > 0 ? `Inventory (${placeableItems.length})` : "Inventory"}
+            {inventory.size > 0 ? `Inventory (${inventory.size})` : "Inventory"}
           </button>
 
           {activeMode && (

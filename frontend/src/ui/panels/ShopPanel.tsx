@@ -37,6 +37,18 @@ export default function ShopPanel({ open, onClose }: ShopPanelProps) {
     setError(null);
     const res = await shopApi.buyBuilding(api, buildingId);
     if (res.success) {
+      let key: ShopItem | undefined = undefined
+
+      if (state.inventory) for (const item of state.inventory.keys()) {
+        if (item.building.id === buildingId) key = item
+      }
+
+      if (key === undefined) for (const item of items) {
+        if (item.building.id === buildingId) key = item
+      }
+
+      if (key) state.inventory?.set(key, (state.inventory.get(key) ?? 0) + 1)
+
       const economyRes = await api.get<{ penitence: number; grace: number; max_penitence: number }>("/user/economy");
       if (economyRes.success) {
         dispatch({ type: "SET_ECONOMY", payload: economyRes.data });
