@@ -44,10 +44,6 @@ export default function GameDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const drainTimeEstimate = displaySin > 0
-    ? Math.ceil(displaySin / (SIN_DRAIN_PER_MINUTE * 60))
-    : 0; // hours
-
   useEffect(() => {
     if (state.checkInResult) {
       setSnackbarMsg(state.checkInResult);

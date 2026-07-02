@@ -112,8 +112,7 @@ export class BattleScene extends Phaser.Scene {
     const totalTW = tilesW + PADDING_TILES * 2;
     const totalTH = tilesH + PADDING_TILES * 2;
     this.cameraManager.setMapSize(-PADDING_TILES, -PADDING_TILES, totalTW - PADDING_TILES, totalTH - PADDING_TILES);
-    const centerPos = IsoMath.tileToScreen(tilesW / 2, tilesH / 2);
-    this.cameraManager.centerOnMap(centerPos.x, centerPos.y);
+    this.cameraManager.centerOnMap();
   }
 
   private renderLayout() {

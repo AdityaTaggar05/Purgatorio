@@ -66,8 +66,6 @@ export default function BattleOverlay({ battle }: BattleOverlayProps) {
   // Compute deployment zone
   const deploymentZone = useMemo(() => {
     const cells: { x: number; y: number }[] = [];
-    const maxX = gridW + PAD * 2;
-    const maxY = gridH + PAD * 2;
     for (let y = -PAD; y < gridH + PAD; y++) {
       for (let x = -PAD; x < gridW + PAD; x++) {
         const inBase = x >= 0 && x < gridW && y >= 0 && y < gridH;
