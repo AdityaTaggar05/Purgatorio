@@ -64,6 +64,8 @@ services:
     build: ./frontend
     ports:
       - "80:80"
+    depends_on:
+      - purg-backend
 
 volumes:
   purg_postgres_data:

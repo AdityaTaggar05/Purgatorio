@@ -170,21 +170,32 @@ export class TerraceScene extends Phaser.Scene {
   }
 
   private lastLayoutKey = "";
+  private lastStructuralKey = "";
 
   private tryRender() {
     if (!latestLayout) return;
-    const key = JSON.stringify(latestLayout);
-    if (key === this.lastLayoutKey) return;
-    this.lastLayoutKey = key;
 
-    const tilesW = IsoMath.gridToTiles(latestLayout.grid_w);
-    const tilesH = IsoMath.gridToTiles(latestLayout.grid_h);
+    const layoutKey = JSON.stringify(latestLayout);
+    if (layoutKey === this.lastLayoutKey) return;
+    this.lastLayoutKey = layoutKey;
 
-    this.cameraManager.setMapSize(0, 0, tilesW, tilesH);
-    this.cameraManager.centerOnMap();
+    const structuralKey = JSON.stringify({
+      gw: latestLayout.grid_w,
+      gh: latestLayout.grid_h,
+      bs: latestLayout.buildings.map(b => `${b.building_id}|${b.x}|${b.y}|${b.size}`).sort(),
+    });
 
-    this.terrain.destroyMap();
-    this.terrain.generateGroundGrid(tilesW, tilesH, 0);
+    if (structuralKey !== this.lastStructuralKey) {
+      this.lastStructuralKey = structuralKey;
+
+      const tilesW = IsoMath.gridToTiles(latestLayout.grid_w);
+      const tilesH = IsoMath.gridToTiles(latestLayout.grid_h);
+      this.cameraManager.setMapSize(0, 0, tilesW, tilesH);
+      this.cameraManager.centerOnMap();
+      this.terrain.destroyMap();
+      this.terrain.generateGroundGrid(tilesW, tilesH, 0);
+    }
+
     this.layoutEngine.renderLayout(latestLayout);
   }
 }

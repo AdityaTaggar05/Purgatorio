@@ -44,16 +44,20 @@ export default function GameDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const drainTimeEstimate = displaySin > 0
-    ? Math.ceil(displaySin / (SIN_DRAIN_PER_MINUTE * 60))
-    : 0; // hours
-
   useEffect(() => {
     if (state.checkInResult) {
       setSnackbarMsg(state.checkInResult);
       dispatch({ type: "SET_CHECK_IN_RESULT", payload: null });
     }
   }, [state.checkInResult, dispatch]);
+
+  useEffect(() => {
+    if (!buildingMenu || !state.layout) return;
+    const fresh = state.layout.buildings.find(
+      (b) => b.building_id === buildingMenu.building_id && b.x === buildingMenu.x && b.y === buildingMenu.y
+    );
+    if (fresh) setBuildingMenu(fresh);
+  }, [state.layout]);
 
   const selectBuilding = useCallback((b: PlacedBuilding | null) => {
     setBuildingMenu(b);

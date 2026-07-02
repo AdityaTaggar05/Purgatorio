@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useGame } from "../../hooks/useGame";
 import type { TroopDeployment } from "../../types/battle";
 import type { ActiveBattle } from "../../app/providers/GameContext";
@@ -50,7 +50,6 @@ export default function DeploymentScreen({
   onIncrementCount,
   onDecrementCount,
   onStartBattle,
-  onSetDeployError,
 }: DeploymentScreenProps) {
   const { state, dispatch } = useGame();
   const { state: socketState, error: socketError, deployCountdown } = socket;

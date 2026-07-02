@@ -46,6 +46,7 @@ func NewSimulation(input BattleInput) *Simulation {
 		changes:     make(map[string]hpRecord),
 		initHP:      make(map[string]int),
 		seed:        input.Seed,
+		endTick: input.EndTick,
 	}
 
 	for _, dep := range input.Deployments {
@@ -93,6 +94,10 @@ func NewSimulation(input BattleInput) *Simulation {
 func (s *Simulation) NextTick() TickResult {
 	s.tick++
 	s.changes = make(map[string]hpRecord)
+
+	if s.endTick > 0 && s.tick > s.endTick {
+		s.done = true
+	}
 
 	s.retargetTroops()
 
@@ -351,18 +356,17 @@ func (s *Simulation) Result() BattleResult {
 }
 
 func (s *Simulation) destructionPercent() float64 {
-	totalMaxHP := 0.0
-	totalDamage := 0.0
+	var destroyed, total float64
+
 	for _, b := range s.buildings {
 		if b.buildingType == "bastion" {
 			continue
 		}
-		totalMaxHP += float64(b.maxHP)
-		totalDamage += float64(b.maxHP) - b.hp
+		total++
+		if !b.alive {
+			destroyed++
+		}
 	}
-	if totalMaxHP == 0 {
-		return 0
-	}
-	pct := (totalDamage / totalMaxHP) * 100.0
-	return math.Round(pct*10) / 10
+
+	return math.Round(100 * destroyed / total)
 }

@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import type { ApiClient } from "../../api/client";
 import type { UserEconomy } from "../../types/economy";
-import type { BaseLayout } from "../../types/building";
+import type { BaseLayout, ShopItem } from "../../types/building";
 import type { Troop, ArmyResponse } from "../../types/army";
 import type { TroopDeployment } from "../../types/battle";
 
@@ -24,6 +24,7 @@ export interface ActiveBattle {
 export interface GameState {
   economy: UserEconomy | null;
   layout: BaseLayout | null;
+  inventory: Map<ShopItem, number> | null;
   troopCatalog: Troop[] | null;
   army: ArmyResponse | null;
   sinMeter: number;
@@ -48,7 +49,8 @@ export type GameAction =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_CHECK_IN_RESULT"; payload: string | null }
-  | { type: "SET_ACTIVE_BATTLE"; payload: ActiveBattle | null };
+  | { type: "SET_ACTIVE_BATTLE"; payload: ActiveBattle | null }
+  | { type: "SET_INVENTORY"; payload: Map<ShopItem, number> | null };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -76,6 +78,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, checkInResult: action.payload };
     case "SET_ACTIVE_BATTLE":
       return { ...state, activeBattle: action.payload };
+    case "SET_INVENTORY":
+      return { ...state, inventory: action.payload }
     default:
       return state;
   }
