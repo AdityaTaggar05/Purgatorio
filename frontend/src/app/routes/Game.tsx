@@ -51,6 +51,14 @@ export default function GameDashboard() {
     }
   }, [state.checkInResult, dispatch]);
 
+  useEffect(() => {
+    if (!buildingMenu || !state.layout) return;
+    const fresh = state.layout.buildings.find(
+      (b) => b.building_id === buildingMenu.building_id && b.x === buildingMenu.x && b.y === buildingMenu.y
+    );
+    if (fresh) setBuildingMenu(fresh);
+  }, [state.layout]);
+
   const selectBuilding = useCallback((b: PlacedBuilding | null) => {
     setBuildingMenu(b);
 

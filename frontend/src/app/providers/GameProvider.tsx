@@ -4,6 +4,7 @@ import { ApiClient } from "../../api/client";
 import { useAuth } from "../../hooks/useAuth";
 import { API_BASE_URL } from "../../config";
 import type { Troop } from "../../types/army";
+import * as baseApi from "../../api/endpoints/base";
 import * as shopApi from "../../api/endpoints/shop";
 import type { ShopItem } from "../../types/shop";
 
@@ -37,9 +38,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
   const api = apiRef.current;
 
+  const layoutRef = useRef<GameState["layout"]>(null);
+  layoutRef.current = state.layout;
+
   useEffect(() => {
     if (!accessToken) return;
     let cancelled = false;
+    let interval: number
 
     async function hydrate() {
       dispatch({ type: "SET_CHECK_IN_RESULT", payload: null });
@@ -61,6 +66,37 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (layoutRes.success) {
         const layout = layoutRes.data as GameState["layout"]
         dispatch({ type: "SET_LAYOUT", payload: layout });
+
+        interval = setInterval(async () => {
+          const layout = layoutRef.current;
+          if (!layout) return;
+
+          const upgrades = layout.buildings
+            .filter((b) => b.metadata?.upgrade_ends_at)
+            .filter((b) => new Date(b.metadata!.upgrade_ends_at!).getTime() <= Date.now());
+
+          if (upgrades.length === 0) return;
+
+          const res = await baseApi.checkIn(api);
+          if (!res.success || res.data.completed_upgrades.length === 0) return;
+
+          const [layoutRes2, economyRes2] = await Promise.all([
+            api.get<{ buildings: unknown[]; grid_w: number; grid_h: number }>("/base/layout"),
+            api.get<{ penitence: number; grace: number; max_penitence: number; overflow_penitence?: number }>("/user/economy"),
+          ]);
+
+          if (layoutRes2.success) {
+            dispatch({ type: "SET_LAYOUT", payload: layoutRes2.data as GameState["layout"] });
+          }
+          if (economyRes2.success) {
+            dispatch({ type: "SET_ECONOMY", payload: economyRes2.data });
+          }
+
+          const names = res.data.completed_upgrades
+            .map(u => `${u.building_id} Lv.${u.from_level} → ${u.to_level}`)
+            .join(", ");
+          dispatch({ type: "SET_CHECK_IN_RESULT", payload: `Upgrades completed: ${names}` });
+        }, 1500)
 
         shopApi.getShop(api).then((res) => {
           const placedCounts = new Map<string, number>();
@@ -107,8 +143,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     hydrate();
-    return () => { cancelled = true; };
-  }, [accessToken]);
+    return () => { cancelled = true; clearInterval(interval) };
+  }, [accessToken, api]);
 
   return (
     <GameContext.Provider value={{ state, api, dispatch }}>
