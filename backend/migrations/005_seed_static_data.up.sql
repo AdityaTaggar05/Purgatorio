@@ -15,7 +15,7 @@ INSERT INTO building_limits (building_id, terrace_level, max_allowed) VALUES
 ON CONFLICT (building_id, terrace_level) DO NOTHING;
 
 INSERT INTO building_levels (building_id, level, hp, damage_per_second, production_rate, storage_capacity, attack_range, upgrade_cost, upgrade_time) VALUES
-  ('bastion', 1, 300, NULL, NULL, NULL, 0, 50, 60),
+  ('bastion', 1, 300, NULL, NULL, NULL, 0, 50, 15),
   ('bastion', 2, 500, NULL, NULL, NULL, 0, 150, 300),
   ('bastion', 3, 800, NULL, NULL, NULL, 0, 400, 900),
   ('bastion', 4, 1200, NULL, NULL, NULL, 0, 900, 1800),
