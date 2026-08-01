@@ -15,7 +15,7 @@ import (
 type RegisterRequestDTO struct {
 	Email    string `json:"email" validate:"required,email"`
 	Username string `json:"username" validate:"required,alphanum,min=3,max=14"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,password"`
 }
 
 type RegisterResponseDTO struct {
