@@ -4,6 +4,7 @@ import LoginPage from "./app/routes/Login"
 import RegisterPage from './app/routes/Register'
 import GamePage from './app/routes/Game'
 import SplashScreen from './app/routes/Splash'
+import NotFound from './app/routes/NotFound'
 import ProtectedRoute from './app/routes/Protected'
 import { GameProvider } from './app/providers/GameProvider'
 
@@ -20,6 +21,7 @@ function App() {
           </GameProvider>
         </ProtectedRoute>
       } />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
