@@ -19,6 +19,13 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	}
 }
 
+func (r *UserRepository) getDB(ctx context.Context) DBTX {
+	if tx := TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return r.DB
+}
+
 func (r *UserRepository) CreateUser(ctx context.Context, email, hash, username string) (model.User, error) {
 	var user model.User
 
@@ -35,7 +42,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, email, hash, username s
 		RETURNING id, username, xp, level, terrace_level
 	`
 
-	err := r.DB.QueryRow(ctx, query, email, hash, username).Scan(&user.ID, &user.Username, &user.XP, &user.Level, &user.TerraceLevel)
+	err := r.getDB(ctx).QueryRow(ctx, query, email, hash, username).Scan(&user.ID, &user.Username, &user.XP, &user.Level, &user.TerraceLevel)
 	return user, err
 }
 
@@ -157,7 +164,7 @@ func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string
 		WHERE auth.email=$1
 	`
 
-	err := r.DB.QueryRow(ctx, query, email).Scan(
+	err := r.getDB(ctx).QueryRow(ctx, query, email).Scan(
 		&user.ID, &user.PasswordHash, &user.Username, &user.XP, &user.Level, &user.TerraceLevel,
 	)
 
@@ -165,7 +172,7 @@ func (r *UserRepository) GetAuthAndUserByEmail(ctx context.Context, email string
 }
 
 func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID uuid.UUID, token string, exp time.Time) error {
-	_, err := r.DB.Exec(
+	_, err := r.getDB(ctx).Exec(
 		ctx,
 		`INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
 		userID, token, exp,
@@ -176,7 +183,7 @@ func (r *UserRepository) CreateRefreshToken(ctx context.Context, userID uuid.UUI
 func (r *UserRepository) GetRefreshToken(ctx context.Context, token string) (model.RefreshToken, error) {
 	var rt model.RefreshToken
 
-	err := r.DB.QueryRow(
+	err := r.getDB(ctx).QueryRow(
 		ctx,
 		`SELECT user_id, token, revoked, expires_at FROM refresh_tokens WHERE token=$1`,
 		token,
@@ -187,7 +194,7 @@ func (r *UserRepository) GetRefreshToken(ctx context.Context, token string) (mod
 }
 
 func (r *UserRepository) RevokeRefreshToken(ctx context.Context, token string) error {
-	_, err := r.DB.Exec(
+	_, err := r.getDB(ctx).Exec(
 		ctx,
 		`UPDATE refresh_tokens SET revoked=true WHERE token=$1`,
 		token,
@@ -199,7 +206,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (model.U
 	var user model.User
 	user.ID = id
 
-	err := r.DB.QueryRow(
+	err := r.getDB(ctx).QueryRow(
 		ctx,
 		`SELECT username, xp, level, terrace_level FROM users WHERE id=$1`,
 		id,
@@ -209,7 +216,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (model.U
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	_, err := r.DB.Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
+	_, err := r.getDB(ctx).Exec(ctx, `DELETE FROM auth WHERE id=$1`, id)
 	return err
 }
 
@@ -223,7 +230,29 @@ func (r *UserRepository) GetEconomy(ctx context.Context, id uuid.UUID) (model.Us
 		WHERE user_id=$1
 	`
 
-	err := r.DB.QueryRow(ctx, query, id).Scan(
+	err := r.getDB(ctx).QueryRow(ctx, query, id).Scan(
+		&eco.Penitence,
+		&eco.Grace,
+		&eco.MaxPenitence,
+		&eco.CollectorPendingPenitence,
+		&eco.CollectorResetAt,
+	)
+
+	return eco, err
+}
+
+func (r *UserRepository) GetEconomyForUpdate(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
+	var eco model.UserEconomy
+	eco.ID = id
+
+	query := `
+		SELECT penitence, grace, max_penitence, collector_pending_penitence, collector_reset_at
+		FROM user_economy
+		WHERE user_id=$1
+		FOR UPDATE
+	`
+
+	err := r.getDB(ctx).QueryRow(ctx, query, id).Scan(
 		&eco.Penitence,
 		&eco.Grace,
 		&eco.MaxPenitence,
@@ -241,13 +270,13 @@ func (r *UserRepository) UpdateEconomy(ctx context.Context, eco model.UserEconom
 		WHERE user_id=$1
 	`
 
-	_, err := r.DB.Exec(ctx, query, eco.ID, eco.Penitence, eco.Grace, eco.MaxPenitence, eco.CollectorPendingPenitence, eco.CollectorResetAt)
+	_, err := r.getDB(ctx).Exec(ctx, query, eco.ID, eco.Penitence, eco.Grace, eco.MaxPenitence, eco.CollectorPendingPenitence, eco.CollectorResetAt)
 
 	return err
 }
 
 func (r *UserRepository) UpdateTerraceLevel(ctx context.Context, id uuid.UUID, level int) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE users SET terrace_level = $2, updated_at = now() WHERE id = $1`,
 		id, level,
 	)
@@ -257,7 +286,7 @@ func (r *UserRepository) UpdateTerraceLevel(ctx context.Context, id uuid.UUID, l
 func (r *UserRepository) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCombat, error) {
 	var c model.UserCombat
 	c.UserID = id
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration, updated_at
 		 FROM user_combat WHERE user_id = $1`,
 		id,
@@ -266,7 +295,7 @@ func (r *UserRepository) GetCombat(ctx context.Context, id uuid.UUID) (model.Use
 }
 
 func (r *UserRepository) UpdateCombat(ctx context.Context, userID uuid.UUID, sinMeter int) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_combat SET sin_meter = $2, updated_at = now()
 		 WHERE user_id = $1`,
 		userID, sinMeter,

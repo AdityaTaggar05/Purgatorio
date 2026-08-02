@@ -63,11 +63,11 @@ func New(cfg *config.Config) (*App, error) {
 	}
 
 	authService := service.NewAuthService(cfg.JWT, signingKey, userRepo)
-	userService := service.NewUserService(userRepo, baseRepo)
+	userService := service.NewUserService(userRepo, baseRepo, db)
 	shopService := service.NewShopService(shopRepo, userRepo)
 	baseService := service.NewBaseService(baseLayoutRepo, shopRepo, userRepo)
 	armyService := service.NewArmyService(armyRepo, userRepo, baseLayoutRepo)
-	battleService := service.NewBattleService(battleRepo, userRepo, armyRepo, baseLayoutRepo, shopRepo)
+	battleService := service.NewBattleService(battleRepo, userRepo, armyRepo, baseLayoutRepo, shopRepo, db)
 
 	// 5) Handler Setup
 	authHandler := auth.NewHandler(logger, authService)

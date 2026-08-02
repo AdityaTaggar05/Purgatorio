@@ -9,8 +9,10 @@ import (
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
 	"github.com/AdityaTaggar05/Purgatorio/internal/engine"
+	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
 	"github.com/AdityaTaggar05/Purgatorio/pkg/purgerr"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type BattleService struct {
@@ -20,6 +22,7 @@ type BattleService struct {
 	BaseLayoutRepo repository.BaseLayoutRepository
 	ShopRepo       repository.ShopRepository
 	Catalog        engine.TroopCatalog
+	DB             *pgxpool.Pool
 }
 
 func NewBattleService(
@@ -28,6 +31,7 @@ func NewBattleService(
 	armyRepo repository.ArmyRepository,
 	baseLayoutRepo repository.BaseLayoutRepository,
 	shopRepo repository.ShopRepository,
+	db *pgxpool.Pool,
 ) *BattleService {
 	catalog := engine.TroopCatalog{}
 	troopList, _ := armyRepo.GetAllTroops(context.Background())
@@ -49,6 +53,7 @@ func NewBattleService(
 		BaseLayoutRepo: baseLayoutRepo,
 		ShopRepo:       shopRepo,
 		Catalog:        catalog,
+		DB:             db,
 	}
 }
 
@@ -260,7 +265,15 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		engineResult = sim.Result()
 	}
 
-	attackerCombat, err := s.BattleRepo.GetUserCombat(ctx, battle.AttackerID)
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to begin transaction"), err)
+	}
+	defer tx.Rollback(ctx)
+
+	txCtx := postgres.CtxWithTx(ctx, tx)
+
+	attackerCombat, err := s.BattleRepo.GetUserCombatForUpdate(txCtx, battle.AttackerID)
 	if err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to get attacker combat state"), err)
 	}
@@ -272,7 +285,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 
 	loot := 0
 	if finalOutcome == engine.Victory {
-		defenderEco, err := s.BattleRepo.GetUserEconomyForBattle(ctx, battle.DefenderID)
+		defenderEco, err := s.BattleRepo.GetUserEconomyForBattleForUpdate(txCtx, battle.DefenderID)
 		if err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to get defender economy"), err)
 		}
@@ -280,46 +293,46 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		loot = computeLoot(totalPenitence, engineResult.Destruction)
 	}
 
-	if err := s.BattleRepo.UpdateBattleOutcome(ctx, battleID, string(finalOutcome), engineResult.Destruction, loot, engineResult.Duration, *battle.BaseSnapshotID); err != nil {
+	if err := s.BattleRepo.UpdateBattleOutcome(txCtx, battleID, string(finalOutcome), engineResult.Destruction, loot, engineResult.Duration, *battle.BaseSnapshotID); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to update battle outcome"), err)
 	}
 
-	if err := s.BattleRepo.UpdateUserCombat(ctx, battle.AttackerID, newSin, &now); err != nil {
+	if err := s.BattleRepo.UpdateUserCombat(txCtx, battle.AttackerID, newSin, &now); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to update attacker combat"), err)
 	}
 
 	switch finalOutcome {
 	case engine.Victory:
-		if err := s.BattleRepo.DeductDefenderPenitence(ctx, battle.DefenderID, loot); err != nil {
+		if err := s.BattleRepo.DeductDefenderPenitence(txCtx, battle.DefenderID, loot); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to deduct defender penitence"), err)
 		}
-		if err := s.BattleRepo.AddAttackerLoot(ctx, battle.AttackerID, loot); err != nil {
+		if err := s.BattleRepo.AddAttackerLoot(txCtx, battle.AttackerID, loot); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to add attacker loot"), err)
 		}
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.AttackerID, true, true); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.AttackerID, true, true); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment attacker stats"), err)
 		}
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.DefenderID, false, false); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.DefenderID, false, false); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment defender stats"), err)
 		}
 
 		shieldDuration := time.Duration(12*3600+int(engineResult.Destruction*30*60)) * time.Second
 		shieldExpires := time.Now().Add(shieldDuration)
-		if err := s.BattleRepo.SetShield(ctx, battle.DefenderID, shieldExpires); err != nil {
+		if err := s.BattleRepo.SetShield(txCtx, battle.DefenderID, shieldExpires); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to set defender shield"), err)
 		}
 	case engine.Defeat:
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.AttackerID, true, false); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.AttackerID, true, false); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment attacker stats"), err)
 		}
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.DefenderID, false, true); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.DefenderID, false, true); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment defender stats"), err)
 		}
 	default:
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.AttackerID, true, false); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.AttackerID, true, false); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment attacker stats"), err)
 		}
-		if err := s.BattleRepo.IncrementUserStats(ctx, battle.DefenderID, false, true); err != nil {
+		if err := s.BattleRepo.IncrementUserStats(txCtx, battle.DefenderID, false, true); err != nil {
 			return nil, purgerr.Wrap(fmt.Errorf("failed to increment defender stats"), err)
 		}
 	}
@@ -328,7 +341,7 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 	for _, dep := range deployment {
 		deductions[dep.TroopType] = dep.Count
 	}
-	if err := s.BattleRepo.DeductTroopsFromArmy(ctx, battle.AttackerID, deductions); err != nil {
+	if err := s.BattleRepo.DeductTroopsFromArmyForUpdate(txCtx, battle.AttackerID, deductions); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to deduct troops"), err)
 	}
 
@@ -338,8 +351,12 @@ func (s *BattleService) ResolveAndStore(ctx context.Context, battleID uuid.UUID,
 		BaseSnapshotID: *battle.BaseSnapshotID,
 		EndTick:        endTick,
 	}
-	if err := s.BattleRepo.StoreReplay(ctx, battleID, replayData); err != nil {
+	if err := s.BattleRepo.StoreReplay(txCtx, battleID, replayData); err != nil {
 		return nil, purgerr.Wrap(fmt.Errorf("failed to store replay"), err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, purgerr.Wrap(fmt.Errorf("failed to commit battle resolution"), err)
 	}
 
 	return &model.BattleOutcome{

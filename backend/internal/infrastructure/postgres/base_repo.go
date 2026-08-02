@@ -18,6 +18,13 @@ func NewBaseRepository(db *pgxpool.Pool) *BaseRepository {
 	}
 }
 
+func (r *BaseRepository) getDB(ctx context.Context) DBTX {
+	if tx := TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return r.DB
+}
+
 func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.UUID) ([]model.ResourceGenerationInfo, error) {
 	query := `
         SELECT
@@ -36,7 +43,7 @@ func (r *BaseRepository) GetResourceGenerationInfo(ctx context.Context, id uuid.
           AND b.category = 'resource'
     `
 
-	rows, err := r.DB.Query(ctx, query, id)
+	rows, err := r.getDB(ctx).Query(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +88,7 @@ func (r *BaseRepository) RemoveUpgradeInfo(ctx context.Context, userID uuid.UUID
 			AND (bl.metadata->>'upgrade_ends_at')::timestamptz <= NOW()
 	`
 
-	_, err := r.DB.Exec(ctx, query, category, userID)
+	_, err := r.getDB(ctx).Exec(ctx, query, category, userID)
 
 	return err
 }

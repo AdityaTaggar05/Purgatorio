@@ -19,8 +19,15 @@ func NewBattleRepository(db *pgxpool.Pool) *BattleRepository {
 	return &BattleRepository{DB: db}
 }
 
+func (r *BattleRepository) getDB(ctx context.Context) DBTX {
+	if tx := TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return r.DB
+}
+
 func (r *BattleRepository) GetMatchList(ctx context.Context, terraceLevel int, excludeUserID uuid.UUID) ([]model.MatchPlayer, error) {
-	rows, err := r.DB.Query(ctx,
+	rows, err := r.getDB(ctx).Query(ctx,
 		`SELECT id, username, terrace_level FROM users
 		 WHERE terrace_level = $1 AND id != $2
 		 ORDER BY username`,
@@ -43,7 +50,7 @@ func (r *BattleRepository) GetMatchList(ctx context.Context, terraceLevel int, e
 }
 
 func (r *BattleRepository) CreateBattle(ctx context.Context, battle model.Battle) (uuid.UUID, error) {
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`INSERT INTO battles (attacker_id, defender_id, outcome, base_snapshot_id, started_at)
 		 VALUES ($1, $2, 'pending', $3, $4)
 		 RETURNING id`,
@@ -54,7 +61,7 @@ func (r *BattleRepository) CreateBattle(ctx context.Context, battle model.Battle
 
 func (r *BattleRepository) GetBattle(ctx context.Context, battleID uuid.UUID) (model.Battle, error) {
 	var b model.Battle
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT id, attacker_id, defender_id, outcome, destruction, loot, duration,
 		        base_snapshot_id, started_at, finished_at
 		 FROM battles WHERE id = $1`,
@@ -65,7 +72,7 @@ func (r *BattleRepository) GetBattle(ctx context.Context, battleID uuid.UUID) (m
 }
 
 func (r *BattleRepository) UpdateBattleOutcome(ctx context.Context, battleID uuid.UUID, outcome string, destruction float64, loot, duration int, snapshotID uuid.UUID) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE battles SET outcome = $2, destruction = $3, loot = $4, duration = $5,
 		        base_snapshot_id = $6, finished_at = now()
 		 WHERE id = $1`,
@@ -81,7 +88,7 @@ func (r *BattleRepository) CreateBaseSnapshot(ctx context.Context, userID uuid.U
 	}
 
 	var id uuid.UUID
-	err = r.DB.QueryRow(ctx,
+	err = r.getDB(ctx).QueryRow(ctx,
 		`INSERT INTO base_snapshots (user_id, buildings) VALUES ($1, $2) RETURNING id`,
 		userID, data,
 	).Scan(&id)
@@ -90,7 +97,7 @@ func (r *BattleRepository) CreateBaseSnapshot(ctx context.Context, userID uuid.U
 
 func (r *BattleRepository) GetBaseSnapshot(ctx context.Context, snapshotID uuid.UUID) ([]engine.BuildingSnapshot, error) {
 	var data []byte
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT buildings FROM base_snapshots WHERE id = $1`,
 		snapshotID,
 	).Scan(&data)
@@ -111,7 +118,7 @@ func (r *BattleRepository) StoreReplay(ctx context.Context, battleID uuid.UUID, 
 		return err
 	}
 
-	_, err = r.DB.Exec(ctx,
+	_, err = r.getDB(ctx).Exec(ctx,
 		`INSERT INTO battle_replays (battle_id, data) VALUES ($1, $2)
 		 ON CONFLICT (battle_id) DO UPDATE SET data = EXCLUDED.data`,
 		battleID, jsonData,
@@ -122,7 +129,7 @@ func (r *BattleRepository) StoreReplay(ctx context.Context, battleID uuid.UUID, 
 func (r *BattleRepository) GetReplay(ctx context.Context, battleID uuid.UUID) (model.BattleReplay, error) {
 	var replay model.BattleReplay
 	var data []byte
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT br.battle_id, b.attacker_id, b.defender_id, b.outcome, br.data
 		 FROM battle_replays br
 		 JOIN battles b ON b.id = br.battle_id
@@ -140,7 +147,7 @@ func (r *BattleRepository) GetReplay(ctx context.Context, battleID uuid.UUID) (m
 }
 
 func (r *BattleRepository) GetRecentBattles(ctx context.Context, userID uuid.UUID, limit int) ([]model.Battle, error) {
-	rows, err := r.DB.Query(ctx,
+	rows, err := r.getDB(ctx).Query(ctx,
 		`SELECT id, attacker_id, defender_id, outcome, destruction, loot, duration,
 		        base_snapshot_id, started_at, finished_at
 		 FROM battles
@@ -170,7 +177,7 @@ func (r *BattleRepository) GetRecentBattles(ctx context.Context, userID uuid.UUI
 func (r *BattleRepository) GetUserCombat(ctx context.Context, userID uuid.UUID) (model.UserCombat, error) {
 	var c model.UserCombat
 	c.UserID = userID
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration
 		 FROM user_combat WHERE user_id = $1`,
 		userID,
@@ -178,8 +185,20 @@ func (r *BattleRepository) GetUserCombat(ctx context.Context, userID uuid.UUID) 
 	return c, err
 }
 
+func (r *BattleRepository) GetUserCombatForUpdate(ctx context.Context, userID uuid.UUID) (model.UserCombat, error) {
+	var c model.UserCombat
+	c.UserID = userID
+	err := r.getDB(ctx).QueryRow(ctx,
+		`SELECT sin_meter, last_attack_at, shield_expires_at, shield_max_duration
+		 FROM user_combat WHERE user_id = $1
+		 FOR UPDATE`,
+		userID,
+	).Scan(&c.SinMeter, &c.LastAttackAt, &c.ShieldExpiresAt, &c.ShieldMaxDuration)
+	return c, err
+}
+
 func (r *BattleRepository) UpdateUserCombat(ctx context.Context, userID uuid.UUID, sinMeter int, lastAttackAt *time.Time) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_combat SET sin_meter = $2, last_attack_at = $3, updated_at = now()
 		 WHERE user_id = $1`,
 		userID, sinMeter, lastAttackAt,
@@ -188,7 +207,7 @@ func (r *BattleRepository) UpdateUserCombat(ctx context.Context, userID uuid.UUI
 }
 
 func (r *BattleRepository) SetShield(ctx context.Context, userID uuid.UUID, shieldExpiresAt time.Time) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_combat SET shield_expires_at = $2, updated_at = now()
 		 WHERE user_id = $1`,
 		userID, shieldExpiresAt,
@@ -199,24 +218,24 @@ func (r *BattleRepository) SetShield(ctx context.Context, userID uuid.UUID, shie
 func (r *BattleRepository) IncrementUserStats(ctx context.Context, userID uuid.UUID, isAttacker, isSuccess bool) error {
 	if isAttacker {
 		if isSuccess {
-			_, err := r.DB.Exec(ctx,
+			_, err := r.getDB(ctx).Exec(ctx,
 				`UPDATE user_stats SET attacks = attacks + 1, attacks_success = attacks_success + 1, updated_at = now()
 				 WHERE user_id = $1`, userID)
 			return err
 		}
-		_, err := r.DB.Exec(ctx,
+		_, err := r.getDB(ctx).Exec(ctx,
 			`UPDATE user_stats SET attacks = attacks + 1, updated_at = now()
 			 WHERE user_id = $1`, userID)
 		return err
 	}
 
 	if isSuccess {
-		_, err := r.DB.Exec(ctx,
+		_, err := r.getDB(ctx).Exec(ctx,
 			`UPDATE user_stats SET defenses = defenses + 1, defenses_success = defenses_success + 1, updated_at = now()
 			 WHERE user_id = $1`, userID)
 		return err
 	}
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_stats SET defenses = defenses + 1, updated_at = now()
 		 WHERE user_id = $1`, userID)
 	return err
@@ -225,7 +244,7 @@ func (r *BattleRepository) IncrementUserStats(ctx context.Context, userID uuid.U
 func (r *BattleRepository) GetUserEconomyForBattle(ctx context.Context, userID uuid.UUID) (model.UserEconomy, error) {
 	var eco model.UserEconomy
 	eco.ID = userID
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT penitence, grace, max_penitence, collector_pending_penitence, collector_reset_at
 		 FROM user_economy WHERE user_id = $1`,
 		userID,
@@ -233,8 +252,20 @@ func (r *BattleRepository) GetUserEconomyForBattle(ctx context.Context, userID u
 	return eco, err
 }
 
+func (r *BattleRepository) GetUserEconomyForBattleForUpdate(ctx context.Context, userID uuid.UUID) (model.UserEconomy, error) {
+	var eco model.UserEconomy
+	eco.ID = userID
+	err := r.getDB(ctx).QueryRow(ctx,
+		`SELECT penitence, grace, max_penitence, collector_pending_penitence, collector_reset_at
+		 FROM user_economy WHERE user_id = $1
+		 FOR UPDATE`,
+		userID,
+	).Scan(&eco.Penitence, &eco.Grace, &eco.MaxPenitence, &eco.CollectorPendingPenitence, &eco.CollectorResetAt)
+	return eco, err
+}
+
 func (r *BattleRepository) DeductDefenderPenitence(ctx context.Context, userID uuid.UUID, amount int) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_economy SET
 			penitence = GREATEST(penitence - $2, 0),
 			collector_pending_penitence = GREATEST(collector_pending_penitence - GREATEST($2 - penitence, 0), 0),
@@ -246,7 +277,7 @@ func (r *BattleRepository) DeductDefenderPenitence(ctx context.Context, userID u
 }
 
 func (r *BattleRepository) AddAttackerLoot(ctx context.Context, userID uuid.UUID, amount int) error {
-	_, err := r.DB.Exec(ctx,
+	_, err := r.getDB(ctx).Exec(ctx,
 		`UPDATE user_economy SET penitence = penitence + $2, updated_at = now()
 		 WHERE user_id = $1`,
 		userID, amount,
@@ -258,7 +289,7 @@ func (r *BattleRepository) GetUserArmyForBattle(ctx context.Context, userID uuid
 	var army model.UserArmy
 	army.UserID = userID
 	var troopsJSON []byte
-	err := r.DB.QueryRow(ctx,
+	err := r.getDB(ctx).QueryRow(ctx,
 		`SELECT troops, used_capacity FROM user_army WHERE user_id = $1`,
 		userID,
 	).Scan(&troopsJSON, &army.UsedCapacity)
@@ -272,8 +303,35 @@ func (r *BattleRepository) GetUserArmyForBattle(ctx context.Context, userID uuid
 	return army, nil
 }
 
+func (r *BattleRepository) GetUserArmyForBattleForUpdate(ctx context.Context, userID uuid.UUID) (model.UserArmy, error) {
+	var army model.UserArmy
+	army.UserID = userID
+	var troopsJSON []byte
+	err := r.getDB(ctx).QueryRow(ctx,
+		`SELECT troops, used_capacity FROM user_army WHERE user_id = $1
+		 FOR UPDATE`,
+		userID,
+	).Scan(&troopsJSON, &army.UsedCapacity)
+	if err != nil {
+		return army, err
+	}
+
+	if err := json.Unmarshal(troopsJSON, &army.Troops); err != nil {
+		return army, err
+	}
+	return army, nil
+}
+
 func (r *BattleRepository) DeductTroopsFromArmy(ctx context.Context, userID uuid.UUID, deductions map[string]int) error {
-	army, err := r.GetUserArmyForBattle(ctx, userID)
+	tx, err := r.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	txCtx := CtxWithTx(ctx, tx)
+
+	army, err := r.GetUserArmyForBattleForUpdate(txCtx, userID)
 	if err != nil {
 		return err
 	}
@@ -296,7 +354,7 @@ func (r *BattleRepository) DeductTroopsFromArmy(ctx context.Context, userID uuid
 		id    string
 		space int
 	}{}
-	rows, err := r.DB.Query(ctx, `SELECT id, space FROM troops`)
+	rows, err := r.getDB(txCtx).Query(txCtx, `SELECT id, space FROM troops`)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {
@@ -314,7 +372,61 @@ func (r *BattleRepository) DeductTroopsFromArmy(ctx context.Context, userID uuid
 		newCapacity += army.Troops[t.id] * t.space
 	}
 
-	_, err = r.DB.Exec(ctx,
+	_, err = r.getDB(txCtx).Exec(txCtx,
+		`UPDATE user_army SET troops = $2::jsonb, used_capacity = $3, updated_at = now()
+		 WHERE user_id = $1`,
+		userID, troopsJSON, newCapacity,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *BattleRepository) DeductTroopsFromArmyForUpdate(ctx context.Context, userID uuid.UUID, deductions map[string]int) error {
+	army, err := r.GetUserArmyForBattleForUpdate(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	for troopID, count := range deductions {
+		current := army.Troops[troopID]
+		army.Troops[troopID] = current - count
+		if army.Troops[troopID] < 0 {
+			army.Troops[troopID] = 0
+		}
+	}
+
+	troopsJSON, err := json.Marshal(army.Troops)
+	if err != nil {
+		return err
+	}
+
+	newCapacity := 0
+	troopList := []struct {
+		id    string
+		space int
+	}{}
+	rows, err := r.getDB(ctx).Query(ctx, `SELECT id, space FROM troops`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			var space int
+			if err := rows.Scan(&id, &space); err == nil {
+				troopList = append(troopList, struct {
+					id    string
+					space int
+				}{id, space})
+			}
+		}
+	}
+	for _, t := range troopList {
+		newCapacity += army.Troops[t.id] * t.space
+	}
+
+	_, err = r.getDB(ctx).Exec(ctx,
 		`UPDATE user_army SET troops = $2::jsonb, used_capacity = $3, updated_at = now()
 		 WHERE user_id = $1`,
 		userID, troopsJSON, newCapacity,

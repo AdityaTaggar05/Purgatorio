@@ -24,14 +24,18 @@ type BattleRepository interface {
 	GetRecentBattles(ctx context.Context, userID uuid.UUID, limit int) ([]model.Battle, error)
 
 	GetUserCombat(ctx context.Context, userID uuid.UUID) (model.UserCombat, error)
+	GetUserCombatForUpdate(ctx context.Context, userID uuid.UUID) (model.UserCombat, error)
 	UpdateUserCombat(ctx context.Context, userID uuid.UUID, sinMeter int, lastAttackAt *time.Time) error
 	SetShield(ctx context.Context, userID uuid.UUID, shieldExpiresAt time.Time) error
 	IncrementUserStats(ctx context.Context, userID uuid.UUID, isAttacker, isSuccess bool) error
 
 	GetUserEconomyForBattle(ctx context.Context, userID uuid.UUID) (model.UserEconomy, error)
+	GetUserEconomyForBattleForUpdate(ctx context.Context, userID uuid.UUID) (model.UserEconomy, error)
 	DeductDefenderPenitence(ctx context.Context, userID uuid.UUID, amount int) error
 	AddAttackerLoot(ctx context.Context, userID uuid.UUID, amount int) error
 
 	GetUserArmyForBattle(ctx context.Context, userID uuid.UUID) (model.UserArmy, error)
+	GetUserArmyForBattleForUpdate(ctx context.Context, userID uuid.UUID) (model.UserArmy, error)
 	DeductTroopsFromArmy(ctx context.Context, userID uuid.UUID, deductions map[string]int) error
+	DeductTroopsFromArmyForUpdate(ctx context.Context, userID uuid.UUID, deductions map[string]int) error
 }

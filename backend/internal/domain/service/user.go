@@ -6,7 +6,9 @@ import (
 
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/model"
 	"github.com/AdityaTaggar05/Purgatorio/internal/domain/repository"
+	"github.com/AdityaTaggar05/Purgatorio/internal/infrastructure/postgres"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const sinDrainPerMinute = 1.0 / 6.0 // 10% per hour; 100 → 0 in ~10 hours
@@ -14,12 +16,14 @@ const sinDrainPerMinute = 1.0 / 6.0 // 10% per hour; 100 → 0 in ~10 hours
 type UserService struct {
 	UserRepo repository.UserRepository
 	BaseRepo repository.BaseRepository
+	DB       *pgxpool.Pool
 }
 
-func NewUserService(userRepo repository.UserRepository, baseRepo repository.BaseRepository) *UserService {
+func NewUserService(userRepo repository.UserRepository, baseRepo repository.BaseRepository, db *pgxpool.Pool) *UserService {
 	return &UserService{
 		UserRepo: userRepo,
 		BaseRepo: baseRepo,
+		DB:       db,
 	}
 }
 
@@ -41,7 +45,6 @@ func (s *UserService) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCo
 		return combat, err
 	}
 
-	// Apply passive sin drain based on elapsed time since last update
 	if combat.UpdatedAt != nil && combat.SinMeter > 0 {
 		elapsed := time.Since(*combat.UpdatedAt)
 		drained := int(elapsed.Minutes() * sinDrainPerMinute)
@@ -55,13 +58,20 @@ func (s *UserService) GetCombat(ctx context.Context, id uuid.UUID) (model.UserCo
 }
 
 func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.UserEconomy, error) {
-	eco, err := s.UserRepo.GetEconomy(ctx, id)
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return model.UserEconomy{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	txCtx := postgres.CtxWithTx(ctx, tx)
+
+	eco, err := s.UserRepo.GetEconomyForUpdate(txCtx, id)
 	if err != nil {
 		return eco, err
 	}
 
-	collectors, err := s.BaseRepo.GetResourceGenerationInfo(ctx, id)
-
+	collectors, err := s.BaseRepo.GetResourceGenerationInfo(txCtx, id)
 	if err != nil {
 		return eco, err
 	}
@@ -97,8 +107,16 @@ func (s *UserService) EconomyCollect(ctx context.Context, id uuid.UUID) (model.U
 	}
 
 	eco.CollectorResetAt = collectionTime
-	s.UserRepo.UpdateEconomy(ctx, eco)
-	s.BaseRepo.RemoveUpgradeInfo(ctx, id, model.BuildingResource)
+	if err := s.UserRepo.UpdateEconomy(txCtx, eco); err != nil {
+		return eco, err
+	}
+	if err := s.BaseRepo.RemoveUpgradeInfo(txCtx, id, model.BuildingResource); err != nil {
+		return eco, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return eco, err
+	}
 
 	return eco, nil
 }
